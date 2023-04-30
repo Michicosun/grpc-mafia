@@ -15,6 +15,11 @@ type connector struct {
 	coord_addr net.Addr
 }
 
+type Message struct {
+	From string `json:"from"`
+	Text string `json:"text"`
+}
+
 func (c *connector) writeToCoordinator(r *Request) error {
 	data, err := json.Marshal(r)
 	if err != nil {
@@ -47,10 +52,15 @@ func (c *connector) CreateGroup(group_name string, addrs []string) error {
 	return c.writeToCoordinator(&request)
 }
 
-func (c *connector) MakeBCast(group_name string, text string) error {
+func (c *connector) MakeBCast(group_name string, msg Message) error {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return errors.Wrap(err, "serialize message")
+	}
+
 	bcast_request := BCastRequest{
 		GroupName: group_name,
-		Data:      []byte(text),
+		Data:      data,
 	}
 
 	request_data, err := json.Marshal(bcast_request)
@@ -66,15 +76,20 @@ func (c *connector) MakeBCast(group_name string, text string) error {
 	return c.writeToCoordinator(&request)
 }
 
-func (c *connector) RecvMessage() (string, error) {
+func (c *connector) RecvMessage() (*Message, error) {
 	buf := make([]byte, MAX_PACKET_SIZE)
 
 	n, _, err := c.socket.ReadFrom(buf)
 	if err != nil {
-		return "", errors.Wrap(err, "read from chat connector")
+		return nil, errors.Wrap(err, "read from chat connector")
 	}
 
-	return string(buf[:n]), nil
+	msg := Message{}
+	if err := json.Unmarshal(buf[:n], &msg); err != nil {
+		return nil, errors.Wrap(err, "deserialize coordinator response")
+	}
+
+	return &msg, nil
 }
 
 func (c *connector) Init(port_to_listen uint32, coord_hostname string, coord_port uint32) error {
