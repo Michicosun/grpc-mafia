@@ -15,9 +15,9 @@ type GameState uint32
 const (
 	Day          = 0
 	Night        = 1
-	PrepareState = 3
-	WinMafia     = 4
-	WinSheriffs  = 5
+	PrepareState = 2
+	WinMafia     = 3
+	WinSheriffs  = 4
 )
 
 type Game struct {
@@ -106,8 +106,6 @@ func (g *Game) sendMsgToGroup(grp map[string]struct{}, msg string) {
 func (g *Game) sendMsgToAll(msg string) {
 	g.sendMsgToGroup(g.alive_players, msg)
 	g.sendMsgToGroup(g.ghosts, msg)
-	g.sendMsgToGroup(g.mafia, msg)
-	g.sendMsgToGroup(g.sheriffs, msg)
 }
 
 func (g *Game) requestVotes(grp map[string]struct{}) {
@@ -139,14 +137,29 @@ func (g *Game) sendCheckResult(to_check string) {
 
 func (g *Game) deathNotify(to string) {
 	g.playersInfo[to].send_chan <- &mafia.Event{
-		Type: mafia.EventType_GameEnd,
-		Data: &mafia.Event_GameEnd_{
-			GameEnd: &mafia.Event_GameEnd{
-				Text: "you were killed -> transformation into ghost",
-				Dead: true,
-			},
+		Type: mafia.EventType_Death,
+		Data: &mafia.Event_Death_{
+			Death: &mafia.Event_Death{},
 		},
 	}
+}
+
+func (g *Game) sendGameEndToGrp(grp map[string]struct{}, text string) {
+	for player := range g.alive_players {
+		g.playersInfo[player].send_chan <- &mafia.Event{
+			Type: mafia.EventType_GameEnd,
+			Data: &mafia.Event_GameEnd_{
+				GameEnd: &mafia.Event_GameEnd{
+					Text: text,
+				},
+			},
+		}
+	}
+}
+
+func (g *Game) sendGameEndToAll(text string) {
+	g.sendGameEndToGrp(g.alive_players, text)
+	g.sendGameEndToGrp(g.ghosts, text)
 }
 
 func (g *Game) Start() {
@@ -275,9 +288,9 @@ func (g *Game) changeState() {
 
 func (g *Game) end() {
 	if g.state == WinMafia {
-		g.sendMsgToAll("game ended, mafia win")
+		g.sendGameEndToAll("game ended, mafia win")
 	} else {
-		g.sendMsgToAll("game ended, sheriffs win")
+		g.sendGameEndToAll("game ended, sheriffs win")
 	}
 }
 

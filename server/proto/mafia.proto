@@ -30,28 +30,41 @@ message Action {
 }
 
 enum EventType {
-  VoteRequest = 0;
-  SystemMessage = 1;
-  MafiaCheckResponse = 2;
-  GameEnd = 3;
+  GameStart = 0;
+  VoteRequest = 1;
+  SystemMessage = 2;
+  MafiaCheckResponse = 3;
+  Death = 4;
+  GameEnd = 5;
+}
+
+enum Role {
+  Mafia = 0;
+  Sheriff = 1;
+  CIVILIAN = 2;
 }
 
 message Event {
+  message GameStart {
+    Role role = 1;
+    repeated string players = 2;
+    repeated string group = 3;
+  }
   message VoteRequest {}
   message SystemMessage { string text = 1; }
   message MafiaCheckResponse {
     string name = 1;
     bool is_mafia = 2;
   }
-  message GameEnd {
-    string text = 1;
-    bool dead = 2;
-  }
+  message Death {}
+  message GameEnd { string text = 1; }
   oneof data {
-    VoteRequest vote_request = 1;
-    SystemMessage message = 2;
-    MafiaCheckResponse mafia_check_response = 3;
-    GameEnd game_end = 4;
+    GameStart game_start = 1;
+    VoteRequest vote_request = 2;
+    SystemMessage message = 3;
+    MafiaCheckResponse mafia_check_response = 4;
+    Death death = 5;
+    GameEnd game_end = 6;
   }
-  EventType type = 5;
+  EventType type = 7;
 }
