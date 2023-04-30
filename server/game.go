@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	mafia "grpc-mafia/server/proto"
+	"math/rand"
 	"sync"
 )
 
@@ -23,6 +24,7 @@ const (
 type Game struct {
 	players_cnt   uint32
 	playersInfo   map[string]Player
+	playerRole    map[string]mafia.Role
 	alive_players map[string]struct{}
 	ghosts        map[string]struct{}
 	mafia         map[string]struct{}
@@ -36,6 +38,10 @@ type Game struct {
 	mtx     sync.Mutex
 	actions sync.Cond
 }
+
+/////////////////////////////////////////////
+// Control methods
+/////////////////////////////////////////////
 
 func (g *Game) Join(name string) (<-chan *mafia.Event, bool) {
 	g.mtx.Lock()
@@ -87,6 +93,45 @@ func (g *Game) Vote(from string, to string) {
 
 	if g.need_events == 0 {
 		g.actions.Signal()
+	}
+}
+
+/////////////////////////////////////////////
+// Send Message methods
+/////////////////////////////////////////////
+
+func mapToArray(grp map[string]struct{}) []string {
+	keys := make([]string, 0)
+
+	for k := range grp {
+		keys = append(keys, k)
+	}
+
+	return keys
+}
+
+func (g *Game) getRoleGroup(player string) []string {
+	if g.isMafia(player) {
+		return mapToArray(g.mafia)
+	} else if g.isSheriff(player) {
+		return mapToArray(g.sheriffs)
+	} else {
+		return make([]string, 0)
+	}
+}
+
+func (g *Game) sendStartGame() {
+	for player := range g.alive_players {
+		g.playersInfo[player].send_chan <- &mafia.Event{
+			Type: mafia.EventType_GameStart,
+			Data: &mafia.Event_GameStart_{
+				GameStart: &mafia.Event_GameStart{
+					Role:    g.playerRole[player],
+					Players: mapToArray(g.alive_players),
+					Group:   g.getRoleGroup(player),
+				},
+			},
+		}
 	}
 }
 
@@ -162,15 +207,61 @@ func (g *Game) sendGameEndToAll(text string) {
 	g.sendGameEndToGrp(g.ghosts, text)
 }
 
-func (g *Game) Start() {
-	// prepare phase
+/////////////////////////////////////////////
+// Game methods
+/////////////////////////////////////////////
 
+func randRole() mafia.Role {
+	return mafia.Role(rand.Uint32() % 3)
+}
+
+func (g *Game) assignRoles() {
+	max_group_cnt := g.players_cnt - 2
+
+	civilians := make([]string, 0)
+
+	for player := range g.alive_players {
+		role := randRole()
+
+		if role == mafia.Role_Mafia && len(g.mafia) < int(max_group_cnt) {
+			g.mafia[player] = struct{}{}
+		} else {
+			role = mafia.Role_Sheriff
+		}
+
+		if role == mafia.Role_Sheriff && len(g.sheriffs) < int(max_group_cnt) {
+			g.sheriffs[player] = struct{}{}
+		} else {
+			role = mafia.Role_Civilian
+		}
+
+		if role == mafia.Role_Civilian {
+			civilians = append(civilians, player)
+		}
+	}
+
+	if len(g.mafia) == 0 {
+		player := civilians[0]
+		civilians = civilians[1:]
+		g.mafia[player] = struct{}{}
+	}
+
+	if len(g.sheriffs) == 0 {
+		g.sheriffs[civilians[0]] = struct{}{}
+	}
+}
+
+func (g *Game) Start() {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
 
+	g.assignRoles()
+	g.sendStartGame()
+
+	// prepare phase
 	g.need_events = len(g.alive_players)
 
-	g.sendMsgToAll("starting game")
+	g.sendMsgToAll("prepare phase -> send DoNothing to exit")
 	g.requestVotes(g.alive_players)
 	g.actions.Wait()
 

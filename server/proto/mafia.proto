@@ -41,7 +41,7 @@ enum EventType {
 enum Role {
   Mafia = 0;
   Sheriff = 1;
-  CIVILIAN = 2;
+  Civilian = 2;
 }
 
 message Event {
