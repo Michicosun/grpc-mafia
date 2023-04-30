@@ -51,7 +51,9 @@ func (tp *TermParser) GetCurBuf() string {
 }
 
 func (tp *TermParser) GetPrefixString() string {
-	return tp.prefix_string
+	green := "\033[32m"
+	reset := "\033[0m"
+	return fmt.Sprintf("%s%s%s", green, tp.prefix_string, reset)
 }
 
 func (tp *TermParser) Run() {
