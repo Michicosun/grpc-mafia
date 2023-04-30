@@ -8,21 +8,20 @@ import (
 	"github.com/c-bata/go-prompt"
 )
 
-var Parser = makeParser()
+var Parser = &TermParser{}
 
 type TermParser struct {
 	prefix_string string
+	cur_buffer    string
 	p             *prompt.Prompt
 }
 
-func (tp *TermParser) executor(in string) {
-	fmt.Println("Your input: " + in)
+func executor(in string) {
+	fmt.Printf("Your input: %s, state: %d\n", in, GameState.phase)
 }
 
-var cur_buffer string = ""
-
-func (tp *TermParser) completer(in prompt.Document) []prompt.Suggest {
-	cur_buffer = in.Text
+func completer(in prompt.Document) []prompt.Suggest {
+	Parser.cur_buffer = in.Text
 
 	s := []prompt.Suggest{
 		{Text: "users", Description: "Store the username and age"},
@@ -35,7 +34,7 @@ func (tp *TermParser) completer(in prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
 }
 
-func (tp *TermParser) exitChecker(in string, breakline bool) bool {
+func exitChecker(in string, breakline bool) bool {
 	return in == "exit" && breakline
 }
 
@@ -47,7 +46,7 @@ func handleExit() {
 }
 
 func (tp *TermParser) GetCurBuf() string {
-	return cur_buffer
+	return tp.cur_buffer
 }
 
 func (tp *TermParser) GetPrefixString() string {
@@ -61,14 +60,13 @@ func (tp *TermParser) Run() {
 	tp.p.Run()
 }
 
-func makeParser() TermParser {
-	var tp TermParser
-
+func (tp *TermParser) Init() {
+	tp.cur_buffer = ""
 	tp.prefix_string = ">>> "
 	tp.p = prompt.New(
-		tp.executor,
-		tp.completer,
-		prompt.OptionSetExitCheckerOnInput(tp.exitChecker),
+		executor,
+		completer,
+		prompt.OptionSetExitCheckerOnInput(exitChecker),
 		prompt.OptionPrefix(tp.prefix_string),
 		prompt.OptionPrefixTextColor(prompt.DarkGreen),
 		prompt.OptionPreviewSuggestionTextColor(prompt.White),
@@ -76,6 +74,4 @@ func makeParser() TermParser {
 		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
 		prompt.OptionDescriptionBGColor(prompt.White),
 	)
-
-	return tp
 }

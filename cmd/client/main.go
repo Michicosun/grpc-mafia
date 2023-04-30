@@ -6,9 +6,13 @@ import (
 )
 
 func main() {
+	client.GameState.Init()
+	client.Parser.Init()
+	client.Printer.Init()
+
 	go func() {
 		for {
-			time.Sleep(5 * time.Second)
+			time.Sleep(1 * time.Second)
 			client.Printer.PrintLine("Hello")
 		}
 	}()
