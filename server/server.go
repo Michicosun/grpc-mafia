@@ -2,6 +2,7 @@ package server
 
 import (
 	mafia "grpc-mafia/server/proto"
+	"io"
 
 	zlog "github.com/rs/zerolog/log"
 )
@@ -19,25 +20,49 @@ func (s *GameServer) FindGame(stream mafia.MafiaService_FindGameServer) error {
 
 	events, game := s.gs.JoinGame(action.GetInit().Name)
 
-	go s.GameListener(stream, events)
-	s.GameWriter(stream, game)
+	go func() {
+		if err = s.GameListener(stream, events); err != nil {
+			zlog.Error().Err(err).Msg("write to stream error")
+		}
+	}()
+
+	if err = s.GameWriter(stream, game); err != nil {
+		zlog.Error().Err(err).Msg("read from stream error")
+		return err
+	}
+
+	return err
+}
+
+func (s *GameServer) GameListener(stream mafia.MafiaService_FindGameServer, events <-chan *mafia.Event) error {
+	for event := range events {
+		zlog.Info().Int32("type", int32(event.Type)).Msg("sending event")
+		err := stream.Send(event)
+		if err != nil {
+			return err
+		}
+	}
+
+	zlog.Info().Msg("game ended -> listener disabled")
 
 	return nil
 }
 
-func (s *GameServer) GameListener(stream mafia.MafiaService_FindGameServer, events <-chan *mafia.Event) {
-	for event := range events {
-		zlog.Info().Int32("type", int32(event.Type)).Msg("sending event")
-		stream.Send(event)
-	}
-}
-
-func (s *GameServer) GameWriter(stream mafia.MafiaService_FindGameServer, game *Game) {
+func (s *GameServer) GameWriter(stream mafia.MafiaService_FindGameServer, game *Game) error {
 	for {
+		if game.isEnded() {
+			zlog.Info().Msg("game ended -> listener disabled")
+			return nil
+		}
+
 		action, err := stream.Recv()
+		if err == io.EOF {
+			zlog.Info().Msg("client disconnected -> writer disabled")
+			return nil
+		}
+
 		if err != nil {
-			zlog.Error().Err(err).Msg("action receive")
-			return
+			return err
 		}
 
 		zlog.Info().Int32("type", int32(action.Type)).Msg("received action")
