@@ -73,7 +73,7 @@ func (c *Coordinator) processRequest(buf []byte) error {
 			return errors.Wrap(err, "parse bcast request")
 		}
 
-		zlog.Info().Str("group", bcast_req.GroupName).Str("text", string(bcast_req.Data)).Msg("got bcast request")
+		zlog.Info().Str("group", bcast_req.GroupName).Str("text", string(bcast_req.Data)).Msg("get bcast request")
 
 		c.bcast_queue <- bcast_req
 
@@ -83,7 +83,7 @@ func (c *Coordinator) processRequest(buf []byte) error {
 			return errors.Wrap(err, "parse create group request")
 		}
 
-		zlog.Info().Str("group", create_req.GroupName).Msg("got create group request")
+		zlog.Info().Str("group", create_req.GroupName).Msg("get create group request")
 
 		c.createGroup(&create_req)
 	}
@@ -142,9 +142,15 @@ func MakeCoordinator() (*Coordinator, error) {
 		return nil, err
 	}
 
-	return &Coordinator{
+	coordinator := &Coordinator{
 		socket:      socket,
 		groups:      make(map[string][]net.Addr),
 		bcast_queue: make(chan BCastRequest, QUEUE_SIZE),
-	}, nil
+	}
+
+	for i := 0; i < QUEUE_SIZE; i += 1 {
+		go coordinator.WorkerRoutine()
+	}
+
+	return coordinator, nil
 }

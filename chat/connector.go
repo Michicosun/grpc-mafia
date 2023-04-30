@@ -66,6 +66,17 @@ func (c *connector) MakeBCast(group_name string, text string) error {
 	return c.writeToCoordinator(&request)
 }
 
+func (c *connector) RecvMessage() (string, error) {
+	buf := make([]byte, MAX_PACKET_SIZE)
+
+	n, _, err := c.socket.ReadFrom(buf)
+	if err != nil {
+		return "", errors.Wrap(err, "read from chat connector")
+	}
+
+	return string(buf[:n]), nil
+}
+
 func (c *connector) Init(port_to_listen uint32, coord_hostname string, coord_port uint32) error {
 	coord_conn := fmt.Sprintf("%s:%d", coord_hostname, coord_port)
 
