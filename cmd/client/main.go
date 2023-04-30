@@ -38,11 +38,9 @@ func main() {
 	client, err := stub.FindGame(context.Background())
 
 	client.Send(&mafia.Action{
-		Type: mafia.ActionType_Vote,
-		Data: &mafia.Action_Vote_{
-			Vote: &mafia.Action_Vote{
-				Name: "michicosun",
-			},
+		Type: mafia.ActionType_Init,
+		Data: &mafia.Action_Init_{
+			Init: &mafia.Action_Init{},
 		},
 	})
 

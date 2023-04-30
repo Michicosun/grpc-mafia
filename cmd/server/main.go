@@ -27,7 +27,7 @@ func main() {
 	}
 
 	srv := grpc.NewServer()
-	mafia.RegisterMafiaServiceServer(srv, &server.GameServer{})
+	mafia.RegisterMafiaServiceServer(srv, server.MakeGameServer())
 
 	zlog.Info().Str("port", port).Msg("started grpc server")
 

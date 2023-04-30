@@ -16,7 +16,10 @@ enum ActionType {
 
 message Action {
   message Init { string name = 1; }
-  message Vote { string name = 1; }
+  message Vote {
+    string from = 1;
+    string name = 2;
+  }
   message DoNothing {}
   oneof data {
     Init init = 1;
@@ -29,12 +32,17 @@ message Action {
 enum EventType {
   VoteRequest = 0;
   SystemMessage = 1;
-  GameEnd = 2;
+  MafiaCheckResponse = 2;
+  GameEnd = 3;
 }
 
 message Event {
   message VoteRequest {}
   message SystemMessage { string text = 1; }
+  message MafiaCheckResponse {
+    string name = 1;
+    bool is_mafia = 2;
+  }
   message GameEnd {
     string text = 1;
     bool dead = 2;
@@ -42,7 +50,8 @@ message Event {
   oneof data {
     VoteRequest vote_request = 1;
     SystemMessage message = 2;
-    GameEnd game_end = 3;
+    MafiaCheckResponse mafia_check_response = 3;
+    GameEnd game_end = 4;
   }
-  EventType type = 4;
+  EventType type = 5;
 }
