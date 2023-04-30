@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+option go_package = "./mafia_proto;mafia_proto";
+
+package mafia;
+
+service MafiaService {
+  rpc FindGame(stream Action) returns (stream Event) {}
+}
+
+enum ActionType {
+  Init = 0;
+  Vote = 1;
+  DoNothing = 2;
+}
+
+message Action {
+  message Init { string name = 1; }
+  message Vote { string name = 1; }
+  message DoNothing {}
+  oneof data {
+    Init init = 1;
+    Vote vote = 2;
+    DoNothing do_nothing = 3;
+  }
+  ActionType type = 4;
+}
+
+enum EventType {
+  VoteRequest = 0;
+  SystemMessage = 1;
+  GameEnd = 2;
+}
+
+message Event {
+  message VoteRequest {}
+  message SystemMessage { string text = 1; }
+  message GameEnd {
+    string text = 1;
+    bool dead = 2;
+  }
+  oneof data {
+    VoteRequest vote_request = 1;
+    SystemMessage message = 2;
+    GameEnd game_end = 3;
+  }
+  EventType type = 4;
+}
