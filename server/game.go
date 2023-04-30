@@ -49,7 +49,7 @@ func (g *Game) Join(name string) (<-chan *mafia.Event, bool) {
 
 	g.alive_players[name] = struct{}{}
 
-	g.msgToAll(fmt.Sprintf("connected new player: %s | %d/%d", name, len(g.alive_players), g.players_cnt))
+	g.sendMsgToAll(fmt.Sprintf("connected new player: %s | %d/%d", name, len(g.alive_players), g.players_cnt))
 
 	is_started := len(g.alive_players) == int(g.players_cnt)
 	if is_started {
@@ -81,6 +81,7 @@ func (g *Game) Vote(from string, to string) {
 	} else if g.isSheriff(from) {
 		g.check_votes = append(g.check_votes, to)
 	} else {
+		// day vote
 		g.kill_votes = append(g.kill_votes, to)
 	}
 
@@ -89,7 +90,7 @@ func (g *Game) Vote(from string, to string) {
 	}
 }
 
-func (g *Game) msgToGroup(grp map[string]struct{}, msg string) {
+func (g *Game) sendMsgToGroup(grp map[string]struct{}, msg string) {
 	for player := range grp {
 		g.playersInfo[player].send_chan <- &mafia.Event{
 			Type: mafia.EventType_SystemMessage,
@@ -102,11 +103,11 @@ func (g *Game) msgToGroup(grp map[string]struct{}, msg string) {
 	}
 }
 
-func (g *Game) msgToAll(msg string) {
-	g.msgToGroup(g.alive_players, msg)
-	g.msgToGroup(g.ghosts, msg)
-	g.msgToGroup(g.mafia, msg)
-	g.msgToGroup(g.sheriffs, msg)
+func (g *Game) sendMsgToAll(msg string) {
+	g.sendMsgToGroup(g.alive_players, msg)
+	g.sendMsgToGroup(g.ghosts, msg)
+	g.sendMsgToGroup(g.mafia, msg)
+	g.sendMsgToGroup(g.sheriffs, msg)
 }
 
 func (g *Game) requestVotes(grp map[string]struct{}) {
@@ -136,6 +137,18 @@ func (g *Game) sendCheckResult(to_check string) {
 	}
 }
 
+func (g *Game) deathNotify(to string) {
+	g.playersInfo[to].send_chan <- &mafia.Event{
+		Type: mafia.EventType_GameEnd,
+		Data: &mafia.Event_GameEnd_{
+			GameEnd: &mafia.Event_GameEnd{
+				Text: "you were killed -> transformation into ghost",
+				Dead: true,
+			},
+		},
+	}
+}
+
 func (g *Game) Start() {
 	// prepare phase
 
@@ -144,12 +157,13 @@ func (g *Game) Start() {
 
 	g.need_events = len(g.alive_players)
 
-	g.msgToAll("starting game")
+	g.sendMsgToAll("starting game")
 	g.requestVotes(g.alive_players)
 	g.actions.Wait()
 
+	// main loop
 	for {
-		g.msgToAll("day started")
+		g.sendMsgToAll("day started")
 		g.day()
 
 		if g.isEnded() {
@@ -157,7 +171,7 @@ func (g *Game) Start() {
 			return
 		}
 
-		g.msgToAll("night started")
+		g.sendMsgToAll("night started")
 		g.night()
 
 		if g.isEnded() {
@@ -167,34 +181,35 @@ func (g *Game) Start() {
 	}
 }
 
-func (g *Game) getMostRecent(arr []string) string {
-	cnt := make(map[string]uint32)
+func (g *Game) getMostFrequent(arr []string) string {
+	cnt := make(map[string]int)
 
 	max_cnt := 0
-	most_recent := ""
+	most_frequent := ""
 	for _, elem := range arr {
 		cnt[elem] += 1
 
-		if cnt[elem] > uint32(max_cnt) {
-			most_recent = elem
+		if cnt[elem] > max_cnt {
+			max_cnt = cnt[elem]
+			most_frequent = elem
 		}
 	}
 
-	return most_recent
+	return most_frequent
 }
 
 func (g *Game) day() {
 	g.kill_votes = make([]string, 0)
 	g.need_events = len(g.alive_players)
 
-	g.msgToGroup(g.alive_players, "vote who is the mafia")
+	g.sendMsgToGroup(g.alive_players, "vote who is the mafia")
 	g.requestVotes(g.alive_players)
 	g.actions.Wait()
 
-	to_kill := g.getMostRecent(g.kill_votes)
+	to_kill := g.getMostFrequent(g.kill_votes)
 	g.kill(to_kill)
 
-	g.msgToAll(fmt.Sprintf("%s was killed", to_kill))
+	g.sendMsgToAll(fmt.Sprintf("%s was killed", to_kill))
 	g.changeState()
 }
 
@@ -203,19 +218,19 @@ func (g *Game) night() {
 	g.check_votes = make([]string, 0)
 	g.need_events = len(g.mafia) + len(g.sheriffs)
 
-	g.msgToGroup(g.mafia, "vote who to kill")
+	g.sendMsgToGroup(g.mafia, "vote who to kill")
 	g.requestVotes(g.mafia)
-	g.msgToGroup(g.sheriffs, "vote who to check")
+	g.sendMsgToGroup(g.sheriffs, "vote who to check")
 	g.requestVotes(g.sheriffs)
 	g.actions.Wait()
 
-	to_kill := g.getMostRecent(g.kill_votes)
+	to_kill := g.getMostFrequent(g.kill_votes)
 	g.kill(to_kill)
 
-	to_check := g.getMostRecent(g.check_votes)
+	to_check := g.getMostFrequent(g.check_votes)
 	g.sendCheckResult(to_check)
 
-	g.msgToAll(fmt.Sprintf("%s was killed", to_kill))
+	g.sendMsgToAll(fmt.Sprintf("%s was killed", to_kill))
 	g.changeState()
 }
 
@@ -240,6 +255,8 @@ func (g *Game) kill(player string) {
 	if g.isSheriff(player) {
 		delete(g.mafia, player)
 	}
+
+	g.deathNotify(player)
 }
 
 func (g *Game) isEnded() bool {
@@ -257,8 +274,11 @@ func (g *Game) changeState() {
 }
 
 func (g *Game) end() {
-	// TODO: check the winner group
-	g.msgToAll("game ended")
+	if g.state == WinMafia {
+		g.sendMsgToAll("game ended, mafia win")
+	} else {
+		g.sendMsgToAll("game ended, sheriffs win")
+	}
 }
 
 func NewGame(player_cnt uint32) *Game {
