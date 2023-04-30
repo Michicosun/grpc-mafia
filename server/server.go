@@ -1,6 +1,8 @@
 package server
 
 import (
+	"google.golang.org/grpc/peer"
+
 	mafia "grpc-mafia/server/proto"
 	"io"
 
@@ -17,6 +19,11 @@ func (s *GameServer) FindGame(stream mafia.MafiaService_FindGameServer) error {
 	if err != nil {
 		return err
 	}
+
+	p, _ := peer.FromContext(stream.Context())
+	// TODO: check ok value
+
+	zlog.Info().Str("addr", p.Addr.String()).Msg("get connection of user")
 
 	events, game := s.gs.JoinGame(action.GetInit().Name)
 
