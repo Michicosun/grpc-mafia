@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "./mafia_proto;mafia_proto";
+option go_package = "./mafia;mafia";
 
 package mafia;
 

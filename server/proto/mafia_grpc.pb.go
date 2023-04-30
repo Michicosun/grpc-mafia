@@ -4,7 +4,7 @@
 // - protoc             v3.6.1
 // source: mafia.proto
 
-package mafia_proto
+package mafia
 
 import (
 	context "context"
