@@ -45,7 +45,7 @@ func (s *GameServer) FindGame(stream mafia.MafiaService_FindGameServer) error {
 
 func (s *GameServer) GameListener(stream mafia.MafiaService_FindGameServer, events <-chan *mafia.Event) error {
 	for event := range events {
-		zlog.Info().Int32("type", int32(event.Type)).Msg("sending event")
+		zlog.Info().Str("type", event.GetType().String()).Msg("sending event")
 		err := stream.Send(event)
 		if err != nil {
 			return err
@@ -74,13 +74,9 @@ func (s *GameServer) GameWriter(stream mafia.MafiaService_FindGameServer, game *
 			return err
 		}
 
-		zlog.Info().Int32("type", int32(action.Type)).Msg("received action")
+		zlog.Info().Str("type", action.GetType().String()).Msg("received action")
 
 		switch action.GetType() {
-		case mafia.ActionType_Init:
-			zlog.Info().Msg("get init message")
-			panic("unexpected message")
-
 		case mafia.ActionType_Vote:
 			from := action.GetVote().From
 			to := action.GetVote().Name
@@ -95,6 +91,16 @@ func (s *GameServer) GameWriter(stream mafia.MafiaService_FindGameServer, game *
 			zlog.Info().Str("from", from).Msg("get do_nothing message")
 
 			game.DoNothing(from)
+
+		case mafia.ActionType_PublishRequest:
+			mafia_name := action.GetPublishRequest().MafiaName
+
+			zlog.Info().Str("mafia_name", mafia_name).Msg("get publish_request message")
+
+			game.Publish(mafia_name)
+
+		default:
+			panic("unexpected message")
 		}
 	}
 }

@@ -97,6 +97,20 @@ func (g *Game) Vote(from string, to string) {
 	}
 }
 
+func (g *Game) Publish(mafia_name string) {
+	g.mtx.Lock()
+	defer g.mtx.Unlock()
+
+	g.sendToGroup(g.alive_players, &mafia.Event{
+		Type: mafia.EventType_Publish,
+		Data: &mafia.Event_Publish_{
+			Publish: &mafia.Event_Publish{
+				MafiaName: mafia_name,
+			},
+		},
+	})
+}
+
 func (g *Game) Disconnect(player string) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
@@ -141,6 +155,12 @@ func (g *Game) getRoleGroup(player string) []string {
 	}
 }
 
+func (g *Game) sendToGroup(grp map[string]struct{}, msg *mafia.Event) {
+	for player := range grp {
+		g.playersInfo[player].send_chan <- msg
+	}
+}
+
 func (g *Game) sendStartGame() {
 	for player := range g.alive_players {
 		g.playersInfo[player].send_chan <- &mafia.Event{
@@ -157,16 +177,14 @@ func (g *Game) sendStartGame() {
 }
 
 func (g *Game) sendMsgToGroup(grp map[string]struct{}, msg string) {
-	for player := range grp {
-		g.playersInfo[player].send_chan <- &mafia.Event{
-			Type: mafia.EventType_SystemMessage,
-			Data: &mafia.Event_Message{
-				Message: &mafia.Event_SystemMessage{
-					Text: msg,
-				},
+	g.sendToGroup(grp, &mafia.Event{
+		Type: mafia.EventType_SystemMessage,
+		Data: &mafia.Event_Message{
+			Message: &mafia.Event_SystemMessage{
+				Text: msg,
 			},
-		}
-	}
+		},
+	})
 }
 
 func (g *Game) sendMsgToAll(msg string) {
@@ -175,43 +193,37 @@ func (g *Game) sendMsgToAll(msg string) {
 }
 
 func (g *Game) requestVotes(grp map[string]struct{}) {
-	for player := range grp {
-		g.playersInfo[player].send_chan <- &mafia.Event{
-			Type: mafia.EventType_VoteRequest,
-			Data: &mafia.Event_VoteRequest_{
-				VoteRequest: &mafia.Event_VoteRequest{},
-			},
-		}
-	}
+	g.sendToGroup(grp, &mafia.Event{
+		Type: mafia.EventType_VoteRequest,
+		Data: &mafia.Event_VoteRequest_{
+			VoteRequest: &mafia.Event_VoteRequest{},
+		},
+	})
 }
 
 func (g *Game) sendCheckResult(to_check string) {
 	is_mafia := g.isMafia(to_check)
 
-	for player := range g.sheriffs {
-		g.playersInfo[player].send_chan <- &mafia.Event{
-			Type: mafia.EventType_MafiaCheckResponse,
-			Data: &mafia.Event_MafiaCheckResponse_{
-				MafiaCheckResponse: &mafia.Event_MafiaCheckResponse{
-					Name:    to_check,
-					IsMafia: is_mafia,
-				},
+	g.sendToGroup(g.sheriffs, &mafia.Event{
+		Type: mafia.EventType_MafiaCheckResponse,
+		Data: &mafia.Event_MafiaCheckResponse_{
+			MafiaCheckResponse: &mafia.Event_MafiaCheckResponse{
+				Name:    to_check,
+				IsMafia: is_mafia,
 			},
-		}
-	}
+		},
+	})
 }
 
 func (g *Game) sendDeathMessageToGroup(grp map[string]struct{}, killed string) {
-	for player := range grp {
-		g.playersInfo[player].send_chan <- &mafia.Event{
-			Type: mafia.EventType_Death,
-			Data: &mafia.Event_Death_{
-				Death: &mafia.Event_Death{
-					Name: killed,
-				},
+	g.sendToGroup(grp, &mafia.Event{
+		Type: mafia.EventType_Death,
+		Data: &mafia.Event_Death_{
+			Death: &mafia.Event_Death{
+				Name: killed,
 			},
-		}
-	}
+		},
+	})
 }
 
 func (g *Game) sendDeathMessageToAll(killed string) {
@@ -220,16 +232,14 @@ func (g *Game) sendDeathMessageToAll(killed string) {
 }
 
 func (g *Game) sendGameEndToGrp(grp map[string]struct{}, text string) {
-	for player := range grp {
-		g.playersInfo[player].send_chan <- &mafia.Event{
-			Type: mafia.EventType_GameEnd,
-			Data: &mafia.Event_GameEnd_{
-				GameEnd: &mafia.Event_GameEnd{
-					Text: text,
-				},
+	g.sendToGroup(grp, &mafia.Event{
+		Type: mafia.EventType_GameEnd,
+		Data: &mafia.Event_GameEnd_{
+			GameEnd: &mafia.Event_GameEnd{
+				Text: text,
 			},
-		}
-	}
+		},
+	})
 }
 
 func (g *Game) sendGameEndToAll(text string) {

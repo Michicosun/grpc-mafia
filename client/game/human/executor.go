@@ -50,5 +50,9 @@ func (hi *humanInteractor) Executor(in string) {
 		}
 	case "disconnect":
 		game.Session.Stop()
+	case "publish":
+		grpc.Connection.SendPublishRequest(game.Session.MafiaName)
+	default:
+		fmt.Println("unrecognized command")
 	}
 }

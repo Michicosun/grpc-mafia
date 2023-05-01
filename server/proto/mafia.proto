@@ -12,6 +12,7 @@ enum ActionType {
   Init = 0;
   Vote = 1;
   DoNothing = 2;
+  PublishRequest = 3;
 }
 
 message Action {
@@ -21,12 +22,14 @@ message Action {
     string name = 2;
   }
   message DoNothing { string from = 1; }
+  message PublishRequest { string mafia_name = 1; }
   oneof data {
     Init init = 1;
     Vote vote = 2;
     DoNothing do_nothing = 3;
+    PublishRequest publish_request = 4;
   }
-  ActionType type = 4;
+  ActionType type = 5;
 }
 
 enum EventType {
@@ -34,8 +37,9 @@ enum EventType {
   VoteRequest = 1;
   SystemMessage = 2;
   MafiaCheckResponse = 3;
-  Death = 4;
-  GameEnd = 5;
+  Publish = 4;
+  Death = 5;
+  GameEnd = 6;
 }
 
 enum Role {
@@ -58,13 +62,15 @@ message Event {
   }
   message Death { string name = 1; }
   message GameEnd { string text = 1; }
+  message Publish { string mafia_name = 1; }
   oneof data {
     GameStart game_start = 1;
     VoteRequest vote_request = 2;
     SystemMessage message = 3;
     MafiaCheckResponse mafia_check_response = 4;
-    Death death = 5;
-    GameEnd game_end = 6;
+    Publish publish = 5;
+    Death death = 6;
+    GameEnd game_end = 7;
   }
-  EventType type = 7;
+  EventType type = 8;
 }

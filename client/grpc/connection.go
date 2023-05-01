@@ -58,6 +58,19 @@ func (gc *connection) SendDoNothing(from string) error {
 	})
 }
 
+func (gc *connection) SendPublishRequest(mafia_name string) error {
+	fmt.Println("sending PublishRequest action")
+
+	return gc.stream.Send(&mafia.Action{
+		Type: mafia.ActionType_PublishRequest,
+		Data: &mafia.Action_PublishRequest_{
+			PublishRequest: &mafia.Action_PublishRequest{
+				MafiaName: mafia_name,
+			},
+		},
+	})
+}
+
 func (gc *connection) Close() {
 	gc.conn.Close()
 }

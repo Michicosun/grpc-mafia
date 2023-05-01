@@ -12,7 +12,7 @@ import (
 func (hi *humanInteractor) Completer(in prompt.Document) []prompt.Suggest {
 	hi.cur_buffer = in.Text
 
-	s := stateToSuggestions[game.Session.State]
+	s := makeStateSuggestions()
 	args := strings.Split(in.TextBeforeCursor(), " ")
 
 	if len(args) > 0 {
@@ -22,6 +22,8 @@ func (hi *humanInteractor) Completer(in prompt.Document) []prompt.Suggest {
 		case "exit":
 			s = []prompt.Suggest{}
 		case "nothing":
+			s = []prompt.Suggest{}
+		case "publish":
 			s = []prompt.Suggest{}
 		case "message":
 			s = makeMessageSuggestions()
@@ -68,6 +70,18 @@ var stateToSuggestions = map[game.GameState][]prompt.Suggest{
 
 var msg_suggests = []prompt.Suggest{
 	{Text: "all", Description: "send message to all players"},
+}
+
+var publish_suggest = prompt.Suggest{Text: "publish", Description: "publish mafia name"}
+
+func makeStateSuggestions() []prompt.Suggest {
+	s := stateToSuggestions[game.Session.State]
+
+	if game.Session.MafiaCheck {
+		s = append(s, publish_suggest)
+	}
+
+	return s
 }
 
 func makeMessageSuggestions() []prompt.Suggest {

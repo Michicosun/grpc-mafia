@@ -26,9 +26,9 @@ func startListening(interactor IInteractor) error {
 			return err
 		}
 
-		PrintLine("log", fmt.Sprintf("read event: %d", int32(event.Type)), interactor)
+		PrintLine("log", fmt.Sprintf("read event: %s", event.GetType().String()), interactor)
 
-		switch event.Type {
+		switch event.GetType() {
 		case mafia.EventType_GameStart:
 			Session.HandleGameStart(event.GetGameStart())
 		case mafia.EventType_VoteRequest:

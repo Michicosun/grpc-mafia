@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"grpc-mafia/client/grpc"
 	mafia "grpc-mafia/server/proto"
 )
@@ -34,6 +35,11 @@ type session struct {
 func (s *session) ChangeState(new_state GameState) {
 	s.State = new_state
 	s.Interactor.Signal()
+}
+
+func (s *session) ClearMafiaCheck() {
+	s.MafiaCheck = false
+	s.MafiaName = ""
 }
 
 func (s *session) Init() {
@@ -89,6 +95,13 @@ func (s *session) HandleSystemMessage(e *mafia.Event_SystemMessage) {
 func (s *session) HandleMafiaCheckResponse(e *mafia.Event_MafiaCheckResponse) {
 	s.MafiaCheck = e.IsMafia
 	s.MafiaName = e.Name
+}
+
+func (s *session) HandlePublish(e *mafia.Event_Publish) {
+	PrintLine("system", fmt.Sprintf("sheriffs revealed mafia: %s", e.MafiaName), s.Interactor)
+
+	// publish is oneshot
+	s.ClearMafiaCheck()
 }
 
 func (s *session) HandleDeath(e *mafia.Event_Death) {
