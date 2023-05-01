@@ -1,13 +1,14 @@
-package client
+package game
 
 import (
 	"fmt"
+	"grpc-mafia/client/game"
+	"grpc-mafia/client/grpc"
 	"strings"
 )
 
-func Executor(in string) {
+func (hi *humanInteractor) Executor(in string) {
 	in = strings.TrimSpace(in)
-
 	blocks := strings.Split(in, " ")
 
 	switch blocks[0] {
@@ -16,7 +17,7 @@ func Executor(in string) {
 			fmt.Println("need to provide login as parameter")
 			return
 		} else {
-			Game.Start(blocks[1])
+			game.Session.Start(blocks[1])
 		}
 	case "message":
 		if len(blocks) != 3 {
@@ -34,20 +35,20 @@ func Executor(in string) {
 			fmt.Println("need to specify who you are voting for")
 			return
 		}
-		if err := GrpcConnect.SendVote(Game.Name, blocks[1]); err != nil {
+		if err := grpc.Connection.SendVote(game.Session.Name, blocks[1]); err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
-			Game.Stop()
+			game.Session.Stop()
 		} else {
-			Game.ChangeState(Waiting)
+			game.Session.ChangeState(game.Waiting)
 		}
 	case "nothing":
-		if err := GrpcConnect.SendDoNothing(Game.Name); err != nil {
+		if err := grpc.Connection.SendDoNothing(game.Session.Name); err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
-			Game.Stop()
+			game.Session.Stop()
 		} else {
-			Game.ChangeState(Waiting)
+			game.Session.ChangeState(game.Waiting)
 		}
 	case "disconnect":
-		Game.Stop()
+		game.Session.Stop()
 	}
 }

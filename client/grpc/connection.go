@@ -1,25 +1,24 @@
-package client
+package grpc
 
 import (
 	"context"
 	"fmt"
 	mafia "grpc-mafia/server/proto"
-	"io"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-var GrpcConnect = &grpcConnect{}
+var Connection = &connection{}
 
-type grpcConnect struct {
+type connection struct {
 	conn   *grpc.ClientConn
 	client mafia.MafiaServiceClient
 	stream mafia.MafiaService_FindGameClient
 }
 
-func (gc *grpcConnect) SendInit(name string) error {
+func (gc *connection) SendInit(name string) error {
 	fmt.Println("sending Init Game action")
 
 	return gc.stream.Send(&mafia.Action{
@@ -32,7 +31,7 @@ func (gc *grpcConnect) SendInit(name string) error {
 	})
 }
 
-func (gc *grpcConnect) SendVote(from string, to string) error {
+func (gc *connection) SendVote(from string, to string) error {
 	fmt.Println("sending Vote action")
 
 	return gc.stream.Send(&mafia.Action{
@@ -46,7 +45,7 @@ func (gc *grpcConnect) SendVote(from string, to string) error {
 	})
 }
 
-func (gc *grpcConnect) SendDoNothing(from string) error {
+func (gc *connection) SendDoNothing(from string) error {
 	fmt.Println("sending DoNothing action")
 
 	return gc.stream.Send(&mafia.Action{
@@ -59,11 +58,11 @@ func (gc *grpcConnect) SendDoNothing(from string) error {
 	})
 }
 
-func (gc *grpcConnect) Close() {
+func (gc *connection) Close() {
 	gc.conn.Close()
 }
 
-func (gc *grpcConnect) Init(host string, port string) error {
+func (gc *connection) Init(host string, port string) error {
 	target := fmt.Sprintf("%s:%s", host, port)
 
 	fmt.Printf("connecting to grpc server: %s\n", target)
@@ -79,7 +78,7 @@ func (gc *grpcConnect) Init(host string, port string) error {
 	return nil
 }
 
-func (gc *grpcConnect) CreateStream() error {
+func (gc *connection) CreateStream() error {
 	stream, err := gc.client.FindGame(context.Background())
 	if err != nil {
 		return err
@@ -89,41 +88,10 @@ func (gc *grpcConnect) CreateStream() error {
 	return nil
 }
 
-func (gc *grpcConnect) CloseStream() error {
+func (gc *connection) CloseStream() error {
 	return gc.stream.CloseSend()
 }
 
-func (gc *grpcConnect) StartListening() error {
-	for {
-		if Game.State == Undefined {
-			Printer.PrintLine("log", "game stopped -> stop listening")
-			return nil
-		}
-
-		event, err := gc.stream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-
-		if err != nil {
-			return err
-		}
-
-		Printer.PrintLine("log", fmt.Sprintf("read event: %d", int32(event.Type)))
-
-		switch event.Type {
-		case mafia.EventType_GameStart:
-			Game.HandleGameStart(event.GetGameStart())
-		case mafia.EventType_VoteRequest:
-			Game.HandleVoteRequest(event.GetVoteRequest())
-		case mafia.EventType_SystemMessage:
-			Game.HandleSystemMessage(event.GetMessage())
-		case mafia.EventType_MafiaCheckResponse:
-			Game.HandleMafiaCheckResponse(event.GetMafiaCheckResponse())
-		case mafia.EventType_Death:
-			Game.HandleDeath(event.GetDeath())
-		case mafia.EventType_GameEnd:
-			Game.HandleGameEnd(event.GetGameEnd())
-		}
-	}
+func (gc *connection) GetStream() mafia.MafiaService_FindGameClient {
+	return gc.stream
 }
