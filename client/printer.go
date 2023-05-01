@@ -8,9 +8,8 @@ type TermPrinter struct {
 	// some state i guess
 }
 
-func (tp *TermPrinter) PrintLine(line string) {
-	GameState.phase += 1
-	fmt.Printf("\033[2K\r%s\n", line)
+func (tp *TermPrinter) PrintLine(from string, msg string) {
+	fmt.Printf("\033[2K\r%s > %s\n", from, msg)
 	fmt.Printf("%s%s", Parser.GetPrefixString(), Parser.GetCurBuf())
 }
 

@@ -16,28 +16,6 @@ type TermParser struct {
 	p             *prompt.Prompt
 }
 
-func executor(in string) {
-	fmt.Printf("Your input: %s, state: %d\n", in, GameState.phase)
-}
-
-func completer(in prompt.Document) []prompt.Suggest {
-	Parser.cur_buffer = in.Text
-
-	s := []prompt.Suggest{
-		{Text: "users", Description: "Store the username and age"},
-		{Text: "articles", Description: "Store the article text posted by user"},
-		{Text: "comments", Description: "Store the text commented to articles"},
-		{Text: "groups", Description: "Combine users with specific rules"},
-		{Text: "exit", Description: "Combine users with specific rules"},
-	}
-
-	return prompt.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
-}
-
-func exitChecker(in string, breakline bool) bool {
-	return in == "exit" && breakline
-}
-
 func handleExit() {
 	rawModeOff := exec.Command("/bin/stty", "-raw", "echo")
 	rawModeOff.Stdin = os.Stdin
@@ -64,8 +42,8 @@ func (tp *TermParser) Init() {
 	tp.cur_buffer = ""
 	tp.prefix_string = ">>> "
 	tp.p = prompt.New(
-		executor,
-		completer,
+		Executor,
+		Completer,
 		prompt.OptionSetExitCheckerOnInput(exitChecker),
 		prompt.OptionPrefix(tp.prefix_string),
 		prompt.OptionPrefixTextColor(prompt.DarkGreen),
