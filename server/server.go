@@ -23,9 +23,10 @@ func (s *GameServer) FindGame(stream mafia.MafiaService_FindGameServer) error {
 	p, _ := peer.FromContext(stream.Context())
 	// TODO: check ok value
 
-	zlog.Info().Str("addr", p.Addr.String()).Msg("get connection of user")
+	name := action.GetInit().Name
+	zlog.Info().Str("name", name).Str("addr", p.Addr.String()).Msg("get connection of user")
 
-	events, game := s.gs.JoinGame(action.GetInit().Name)
+	events, game := s.gs.JoinGame(name)
 
 	go func() {
 		if err = s.GameListener(stream, events); err != nil {
@@ -35,6 +36,7 @@ func (s *GameServer) FindGame(stream mafia.MafiaService_FindGameServer) error {
 
 	if err = s.GameWriter(stream, game); err != nil {
 		zlog.Error().Err(err).Msg("read from stream error")
+		game.Disconnect(name)
 		return err
 	}
 
@@ -80,16 +82,19 @@ func (s *GameServer) GameWriter(stream mafia.MafiaService_FindGameServer, game *
 			panic("unexpected message")
 
 		case mafia.ActionType_Vote:
-			zlog.Info().Msg("get vote message")
-
 			from := action.GetVote().From
 			to := action.GetVote().Name
+
+			zlog.Info().Str("from", from).Str("to", to).Msg("get vote message")
 
 			game.Vote(from, to)
 
 		case mafia.ActionType_DoNothing:
-			zlog.Info().Msg("get do_nothing message")
-			game.DoNothing()
+			from := action.GetDoNothing().From
+
+			zlog.Info().Str("from", from).Msg("get do_nothing message")
+
+			game.DoNothing(from)
 		}
 	}
 }

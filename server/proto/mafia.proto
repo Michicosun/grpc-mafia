@@ -20,7 +20,7 @@ message Action {
     string from = 1;
     string name = 2;
   }
-  message DoNothing {}
+  message DoNothing { string from = 1; }
   oneof data {
     Init init = 1;
     Vote vote = 2;
@@ -39,9 +39,9 @@ enum EventType {
 }
 
 enum Role {
-  Mafia = 0;
-  Sheriff = 1;
-  Civilian = 2;
+  Civilian = 0;
+  Mafia = 1;
+  Sheriff = 2;
 }
 
 message Event {

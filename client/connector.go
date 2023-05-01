@@ -46,13 +46,15 @@ func (gc *grpcConnect) SendVote(from string, to string) error {
 	})
 }
 
-func (gc *grpcConnect) SendDoNothing() error {
+func (gc *grpcConnect) SendDoNothing(from string) error {
 	fmt.Println("sending DoNothing action")
 
 	return gc.stream.Send(&mafia.Action{
 		Type: mafia.ActionType_DoNothing,
 		Data: &mafia.Action_DoNothing_{
-			DoNothing: &mafia.Action_DoNothing{},
+			DoNothing: &mafia.Action_DoNothing{
+				From: from,
+			},
 		},
 	})
 }

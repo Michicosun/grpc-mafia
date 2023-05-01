@@ -41,7 +41,7 @@ func Executor(in string) {
 			Game.ChangeState(Waiting)
 		}
 	case "nothing":
-		if err := GrpcConnect.SendDoNothing(); err != nil {
+		if err := GrpcConnect.SendDoNothing(Game.Name); err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
 			Game.Stop()
 		} else {

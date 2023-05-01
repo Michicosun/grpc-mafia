@@ -22,18 +22,19 @@ const (
 )
 
 type Game struct {
-	players_cnt   uint32
-	playersInfo   map[string]Player
-	playerRole    map[string]mafia.Role
+	players_cnt uint32
+	playersInfo map[string]Player
+	playersRole map[string]mafia.Role
+
 	alive_players map[string]struct{}
 	ghosts        map[string]struct{}
 	mafia         map[string]struct{}
 	sheriffs      map[string]struct{}
 
-	state       GameState
-	need_events int
-	kill_votes  []string
-	check_votes []string
+	state            GameState
+	need_events_from map[string]struct{}
+	kill_votes       []string
+	check_votes      []string
 
 	mtx     sync.Mutex
 	actions sync.Cond
@@ -47,7 +48,7 @@ func (g *Game) Join(name string) (<-chan *mafia.Event, bool) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
 
-	stream := make(chan *mafia.Event, 1)
+	stream := make(chan *mafia.Event, 2)
 
 	g.playersInfo[name] = Player{
 		send_chan: stream,
@@ -65,13 +66,13 @@ func (g *Game) Join(name string) (<-chan *mafia.Event, bool) {
 	return stream, is_started
 }
 
-func (g *Game) DoNothing() {
+func (g *Game) DoNothing(from string) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
 
-	g.need_events -= 1
+	delete(g.need_events_from, from)
 
-	if g.need_events == 0 {
+	if len(g.need_events_from) == 0 {
 		g.actions.Signal()
 	}
 }
@@ -80,7 +81,7 @@ func (g *Game) Vote(from string, to string) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
 
-	g.need_events -= 1
+	delete(g.need_events_from, from)
 
 	if g.isMafia(from) {
 		g.kill_votes = append(g.kill_votes, to)
@@ -91,7 +92,27 @@ func (g *Game) Vote(from string, to string) {
 		g.kill_votes = append(g.kill_votes, to)
 	}
 
-	if g.need_events == 0 {
+	if len(g.need_events_from) == 0 {
+		g.actions.Signal()
+	}
+}
+
+func (g *Game) Disconnect(player string) {
+	g.mtx.Lock()
+	defer g.mtx.Unlock()
+
+	// disconnect == death
+	_, is_alive := g.alive_players[player]
+	if is_alive {
+		g.sendMsgToAll(fmt.Sprintf("%s disconnected", player))
+		g.kill(player)
+	}
+	delete(g.ghosts, player)
+
+	// remove from wait list
+	delete(g.need_events_from, player)
+
+	if len(g.need_events_from) == 0 {
 		g.actions.Signal()
 	}
 }
@@ -126,7 +147,7 @@ func (g *Game) sendStartGame() {
 			Type: mafia.EventType_GameStart,
 			Data: &mafia.Event_GameStart_{
 				GameStart: &mafia.Event_GameStart{
-					Role:    g.playerRole[player],
+					Role:    g.playersRole[player],
 					Players: mapToArray(g.alive_players),
 					Group:   g.getRoleGroup(player),
 				},
@@ -224,8 +245,14 @@ func randRole() mafia.Role {
 	return mafia.Role(rand.Uint32() % 3)
 }
 
+func (g *Game) waitEventsFrom(grp map[string]struct{}) {
+	for player := range grp {
+		g.need_events_from[player] = struct{}{}
+	}
+}
+
 func (g *Game) assignRoles() {
-	max_group_cnt := g.players_cnt - 2
+	max_group_cnt := (g.players_cnt - 1) / 2
 
 	civilians := make([]string, 0)
 
@@ -234,12 +261,14 @@ func (g *Game) assignRoles() {
 
 		if role == mafia.Role_Mafia && len(g.mafia) < int(max_group_cnt) {
 			g.mafia[player] = struct{}{}
+			g.playersRole[player] = mafia.Role_Mafia
 		} else {
 			role = mafia.Role_Sheriff
 		}
 
 		if role == mafia.Role_Sheriff && len(g.sheriffs) < int(max_group_cnt) {
 			g.sheriffs[player] = struct{}{}
+			g.playersRole[player] = mafia.Role_Sheriff
 		} else {
 			role = mafia.Role_Civilian
 		}
@@ -253,10 +282,13 @@ func (g *Game) assignRoles() {
 		player := civilians[0]
 		civilians = civilians[1:]
 		g.mafia[player] = struct{}{}
+		g.playersRole[player] = mafia.Role_Mafia
 	}
 
 	if len(g.sheriffs) == 0 {
-		g.sheriffs[civilians[0]] = struct{}{}
+		player := civilians[0]
+		g.sheriffs[player] = struct{}{}
+		g.playersRole[player] = mafia.Role_Sheriff
 	}
 }
 
@@ -268,10 +300,9 @@ func (g *Game) Start() {
 	g.sendStartGame()
 
 	// prepare phase
-	g.need_events = len(g.alive_players)
+	g.waitEventsFrom(g.alive_players)
 
-	g.sendMsgToAll("prepare phase -> send DoNothing to exit")
-	g.requestVotes(g.alive_players)
+	g.sendMsgToAll("prepare phase -> send DoNothing to continue")
 	g.actions.Wait()
 
 	// main loop
@@ -313,23 +344,27 @@ func (g *Game) getMostFrequent(arr []string) string {
 
 func (g *Game) day() {
 	g.kill_votes = make([]string, 0)
-	g.need_events = len(g.alive_players)
+
+	g.waitEventsFrom(g.alive_players)
 
 	g.sendMsgToGroup(g.alive_players, "vote who is the mafia")
 	g.requestVotes(g.alive_players)
 	g.actions.Wait()
 
 	to_kill := g.getMostFrequent(g.kill_votes)
-	g.kill(to_kill)
 
 	g.sendMsgToAll(fmt.Sprintf("%s was killed", to_kill))
+	g.kill(to_kill)
+
 	g.changeState()
 }
 
 func (g *Game) night() {
 	g.kill_votes = make([]string, 0)
 	g.check_votes = make([]string, 0)
-	g.need_events = len(g.mafia) + len(g.sheriffs)
+
+	g.waitEventsFrom(g.mafia)
+	g.waitEventsFrom(g.sheriffs)
 
 	g.sendMsgToGroup(g.mafia, "vote who to kill")
 	g.requestVotes(g.mafia)
@@ -338,12 +373,13 @@ func (g *Game) night() {
 	g.actions.Wait()
 
 	to_kill := g.getMostFrequent(g.kill_votes)
+
+	g.sendMsgToAll(fmt.Sprintf("mafia killed %s", to_kill))
 	g.kill(to_kill)
 
 	to_check := g.getMostFrequent(g.check_votes)
 	g.sendCheckResult(to_check)
 
-	g.sendMsgToAll(fmt.Sprintf("%s was killed", to_kill))
 	g.changeState()
 }
 
@@ -396,17 +432,19 @@ func (g *Game) end() {
 
 func NewGame(player_cnt uint32) *Game {
 	game := &Game{
-		players_cnt:   player_cnt,
-		playersInfo:   make(map[string]Player),
+		players_cnt: player_cnt,
+		playersInfo: make(map[string]Player),
+		playersRole: make(map[string]mafia.Role),
+
 		alive_players: make(map[string]struct{}),
 		ghosts:        make(map[string]struct{}),
 		mafia:         make(map[string]struct{}),
 		sheriffs:      make(map[string]struct{}),
 
-		state:       PrepareState,
-		need_events: int(player_cnt),
-		kill_votes:  make([]string, 0),
-		check_votes: make([]string, 0),
+		state:            PrepareState,
+		need_events_from: make(map[string]struct{}),
+		kill_votes:       make([]string, 0),
+		check_votes:      make([]string, 0),
 	}
 
 	game.actions = sync.Cond{
