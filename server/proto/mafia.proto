@@ -56,7 +56,7 @@ message Event {
     string name = 1;
     bool is_mafia = 2;
   }
-  message Death {}
+  message Death { string name = 1; }
   message GameEnd { string text = 1; }
   oneof data {
     GameStart game_start = 1;

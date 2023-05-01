@@ -180,13 +180,22 @@ func (g *Game) sendCheckResult(to_check string) {
 	}
 }
 
-func (g *Game) deathNotify(to string) {
-	g.playersInfo[to].send_chan <- &mafia.Event{
-		Type: mafia.EventType_Death,
-		Data: &mafia.Event_Death_{
-			Death: &mafia.Event_Death{},
-		},
+func (g *Game) sendDeathMessageToGroup(grp map[string]struct{}, killed string) {
+	for player := range grp {
+		g.playersInfo[player].send_chan <- &mafia.Event{
+			Type: mafia.EventType_Death,
+			Data: &mafia.Event_Death_{
+				Death: &mafia.Event_Death{
+					Name: killed,
+				},
+			},
+		}
 	}
+}
+
+func (g *Game) sendDeathMessageToAll(killed string) {
+	g.sendDeathMessageToGroup(g.alive_players, killed)
+	g.sendDeathMessageToGroup(g.ghosts, killed)
 }
 
 func (g *Game) sendGameEndToGrp(grp map[string]struct{}, text string) {
@@ -360,7 +369,7 @@ func (g *Game) kill(player string) {
 		delete(g.mafia, player)
 	}
 
-	g.deathNotify(player)
+	g.sendDeathMessageToAll(player)
 }
 
 func (g *Game) isEnded() bool {
