@@ -14,12 +14,14 @@ func Executor(in string) {
 	case "connect":
 		if len(blocks) != 2 {
 			fmt.Println("need to provide login as parameter")
+			return
 		} else {
-			Game.Init(blocks[1])
+			Game.Start(blocks[1])
 		}
 	case "message":
 		if len(blocks) != 3 {
 			fmt.Println("need to provide which group is this message for")
+			return
 		}
 		switch blocks[1] {
 		case "all":
@@ -30,6 +32,7 @@ func Executor(in string) {
 	case "vote":
 		if len(blocks) != 2 {
 			fmt.Println("need to specify who you are voting for")
+			return
 		}
 		if err := GrpcConnect.SendVote(Game.Name, blocks[1]); err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())

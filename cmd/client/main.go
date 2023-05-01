@@ -1,54 +1,29 @@
 package main
 
 import (
-	"context"
+	"flag"
 	"fmt"
-	"log"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-
-	mafia "grpc-mafia/server/proto"
-
-	zlog "github.com/rs/zerolog/log"
+	"grpc-mafia/client"
+	"os"
 )
 
 func main() {
-	// client.GameState.Init()
-	// client.Parser.Init()
-	// client.Printer.Init()
+	var grpc_host string
+	var grpc_port string
 
-	// go func() {
-	// 	for {
-	// 		time.Sleep(1 * time.Second)
-	// 		client.Printer.PrintLine("Hello")
-	// 	}
-	// }()
+	flag.StringVar(&grpc_host, "grpc_host", "localhost", "host of grpc game service")
+	flag.StringVar(&grpc_port, "grpc_port", "9000", "port of grpc game service")
 
-	// client.Parser.Run()
+	flag.Parse()
 
-	conn, err := grpc.Dial(":9000", grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
-	if err != nil {
-		zlog.Fatal().Err(err).Msg("grpc dial")
-	}
-	defer conn.Close()
+	client.Parser.Init()
+	client.Printer.Init()
+	client.Game.Init()
 
-	stub := mafia.NewMafiaServiceClient(conn)
-
-	client, err := stub.FindGame(context.Background())
-
-	client.Send(&mafia.Action{
-		Type: mafia.ActionType_Init,
-		Data: &mafia.Action_Init_{
-			Init: &mafia.Action_Init{},
-		},
-	})
-
-	if err != nil {
-		zlog.Fatal().Err(err).Msg("find game")
-		log.Fatalln(err)
+	if err := client.GrpcConnect.Init(grpc_host, grpc_port); err != nil {
+		fmt.Printf("ERROR: %e\n", err)
+		os.Exit(1)
 	}
 
-	response, _ := client.Recv()
-	fmt.Println(response.GetMessage().Text)
+	client.Parser.Run()
 }

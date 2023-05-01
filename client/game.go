@@ -31,7 +31,11 @@ func (g *game) ChangeState(new_state GameState) {
 	g.State = new_state
 }
 
-func (g *game) Init(name string) error {
+func (g *game) Init() {
+	g.State = Undefined
+}
+
+func (g *game) Start(name string) error {
 	if err := GrpcConnect.CreateStream(); err != nil {
 		return err
 	}
@@ -40,6 +44,7 @@ func (g *game) Init(name string) error {
 		return err
 	}
 
+	g.ChangeState(Waiting)
 	go GrpcConnect.StartListening()
 
 	return nil

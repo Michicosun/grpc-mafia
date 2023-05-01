@@ -64,7 +64,7 @@ func (gc *grpcConnect) Close() {
 func (gc *grpcConnect) Init(host string, port string) error {
 	target := fmt.Sprintf("%s:%s", host, port)
 
-	Printer.PrintLine("log", fmt.Sprintf("connecting to grpc server: %s", target))
+	fmt.Printf("connecting to grpc server: %s\n", target)
 
 	conn, err := grpc.Dial(target, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
