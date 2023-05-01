@@ -13,6 +13,7 @@ const (
 	Waiting      = 0
 	PrepareState = 1
 	NeedVote     = 2
+	Ghost        = 3
 )
 
 type game struct {
@@ -88,6 +89,11 @@ func (g *game) HandleMafiaCheckResponse(e *mafia.Event_MafiaCheckResponse) {
 
 func (g *game) HandleDeath(e *mafia.Event_Death) {
 	delete(g.AlivePlayers, e.Name)
+
+	if e.Name == g.Name {
+		// user was killed
+		g.ChangeState(Ghost)
+	}
 }
 
 func (g *game) HandleGameEnd(e *mafia.Event_GameEnd) {

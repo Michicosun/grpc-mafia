@@ -51,6 +51,10 @@ var stateToSuggestions = map[GameState][]prompt.Suggest{
 		{Text: "vote", Description: "vote in this turn"},
 		{Text: "exit", Description: "close client"},
 	},
+	Ghost: {
+		{Text: "disconnect", Description: "exit this game"},
+		{Text: "exit", Description: "close client"},
+	},
 }
 
 var msg_suggests = []prompt.Suggest{

@@ -47,5 +47,7 @@ func Executor(in string) {
 		} else {
 			Game.ChangeState(Waiting)
 		}
+	case "disconnect":
+		Game.Stop()
 	}
 }

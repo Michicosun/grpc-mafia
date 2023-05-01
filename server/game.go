@@ -220,7 +220,7 @@ func (g *Game) sendDeathMessageToAll(killed string) {
 }
 
 func (g *Game) sendGameEndToGrp(grp map[string]struct{}, text string) {
-	for player := range g.alive_players {
+	for player := range grp {
 		g.playersInfo[player].send_chan <- &mafia.Event{
 			Type: mafia.EventType_GameEnd,
 			Data: &mafia.Event_GameEnd_{
@@ -415,7 +415,7 @@ func (g *Game) kill(player string) {
 	}
 
 	if g.isSheriff(player) {
-		delete(g.mafia, player)
+		delete(g.sheriffs, player)
 	}
 
 	g.sendDeathMessageToAll(player)
@@ -428,7 +428,7 @@ func (g *Game) isEnded() bool {
 func (g *Game) changeState() {
 	if len(g.mafia) == 0 {
 		g.state = WinSheriffs
-	} else if 2*len(g.mafia) > len(g.alive_players) {
+	} else if 2*len(g.mafia) >= len(g.alive_players) {
 		g.state = WinMafia
 	} else {
 		g.state = (g.state + 1) % 2
