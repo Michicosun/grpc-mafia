@@ -45,6 +45,7 @@ func (g *game) Start(name string) error {
 		return err
 	}
 
+	g.Name = name
 	g.ChangeState(Waiting)
 	go GrpcConnect.StartListening()
 
