@@ -33,6 +33,7 @@ func (g *game) ChangeState(new_state GameState) {
 
 func (g *game) Init() {
 	g.State = Undefined
+	g.Role = mafia.Role_Civilian
 }
 
 func (g *game) Start(name string) error {

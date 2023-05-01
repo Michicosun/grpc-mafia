@@ -1,7 +1,9 @@
 package client
 
 import (
+	"fmt"
 	mafia "grpc-mafia/server/proto"
+	"strings"
 
 	"github.com/c-bata/go-prompt"
 )
@@ -10,12 +12,21 @@ func Completer(in prompt.Document) []prompt.Suggest {
 	Parser.cur_buffer = in.Text
 
 	s := stateToSuggestions[Game.State]
-	word := in.GetWordBeforeCursor()
+	args := strings.Split(in.TextBeforeCursor(), " ")
 
-	if word == "message" {
-		s = makeMessageSuggestions()
-	} else if word == "vote" {
-		s = makeAlivePlayersSuggestions()
+	if len(args) > 0 {
+		switch args[0] {
+		case "connect":
+			s = []prompt.Suggest{}
+		case "exit":
+			s = []prompt.Suggest{}
+		case "nothing":
+			s = []prompt.Suggest{}
+		case "message":
+			s = makeMessageSuggestions()
+		case "vote":
+			s = makeAlivePlayersSuggestions()
+		}
 	}
 
 	return prompt.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
@@ -24,17 +35,21 @@ func Completer(in prompt.Document) []prompt.Suggest {
 var stateToSuggestions = map[GameState][]prompt.Suggest{
 	Undefined: {
 		{Text: "connect", Description: "find game"},
+		{Text: "exit", Description: "close client"},
 	},
 	Waiting: {
 		{Text: "message", Description: "send message"},
+		{Text: "exit", Description: "close client"},
 	},
 	PrepareState: {
 		{Text: "message", Description: "send message"},
 		{Text: "nothing", Description: "pass this turn"},
+		{Text: "exit", Description: "close client"},
 	},
 	NeedVote: {
 		{Text: "message", Description: "send message"},
 		{Text: "vote", Description: "vote in this turn"},
+		{Text: "exit", Description: "close client"},
 	},
 }
 
@@ -71,5 +86,9 @@ func makeAlivePlayersSuggestions() []prompt.Suggest {
 }
 
 func exitChecker(in string, breakline bool) bool {
-	return in == "exit" && breakline
+	if in == "exit" && breakline {
+		fmt.Print("\r")
+		return true
+	}
+	return false
 }

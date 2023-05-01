@@ -20,7 +20,7 @@ type grpcConnect struct {
 }
 
 func (gc *grpcConnect) SendInit(name string) error {
-	Printer.PrintLine("log", "sending Init Game action")
+	fmt.Println("sending Init Game action")
 
 	return gc.stream.Send(&mafia.Action{
 		Type: mafia.ActionType_Init,
@@ -33,7 +33,7 @@ func (gc *grpcConnect) SendInit(name string) error {
 }
 
 func (gc *grpcConnect) SendVote(from string, to string) error {
-	Printer.PrintLine("log", "sending Vote action")
+	fmt.Println("sending Vote action")
 
 	return gc.stream.Send(&mafia.Action{
 		Type: mafia.ActionType_Vote,
@@ -47,7 +47,7 @@ func (gc *grpcConnect) SendVote(from string, to string) error {
 }
 
 func (gc *grpcConnect) SendDoNothing() error {
-	Printer.PrintLine("log", "sending DoNothing action")
+	fmt.Println("sending DoNothing action")
 
 	return gc.stream.Send(&mafia.Action{
 		Type: mafia.ActionType_DoNothing,
