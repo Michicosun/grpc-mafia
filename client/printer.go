@@ -5,7 +5,7 @@ import "fmt"
 var Printer = TermPrinter{}
 
 type TermPrinter struct {
-	// some state i guess
+	// some state
 }
 
 func (tp *TermPrinter) PrintLine(from string, msg string) {
