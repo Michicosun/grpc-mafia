@@ -33,16 +33,14 @@ func Executor(in string) {
 		}
 		if err := GrpcConnect.SendVote(Game.Name, blocks[1]); err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
-			Game.ChangeState(Undefined)
-			GrpcConnect.CloseStream()
+			Game.Stop()
 		} else {
 			Game.ChangeState(Waiting)
 		}
 	case "nothing":
 		if err := GrpcConnect.SendDoNothing(); err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
-			Game.ChangeState(Undefined)
-			GrpcConnect.CloseStream()
+			Game.Stop()
 		} else {
 			Game.ChangeState(Waiting)
 		}
