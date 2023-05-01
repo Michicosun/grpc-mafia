@@ -83,13 +83,14 @@ func (g *Game) Vote(from string, to string) {
 
 	delete(g.need_events_from, from)
 
-	if g.isMafia(from) {
+	if g.state == Day {
+		g.kill_votes = append(g.kill_votes, to)
+	} else if g.isMafia(from) {
 		g.kill_votes = append(g.kill_votes, to)
 	} else if g.isSheriff(from) {
 		g.check_votes = append(g.check_votes, to)
 	} else {
-		// day vote
-		g.kill_votes = append(g.kill_votes, to)
+		panic("broken state")
 	}
 
 	if len(g.need_events_from) == 0 {
@@ -328,6 +329,9 @@ func (g *Game) Start() {
 	g.sendMsgToAll("prepare phase -> send DoNothing to continue")
 	g.actions.Wait()
 
+	// Day -> Night -> Day -> ...
+	g.state = Day
+
 	// main loop
 	for {
 		g.sendMsgToAll("day started")
@@ -348,21 +352,29 @@ func (g *Game) Start() {
 	}
 }
 
-func (g *Game) getMostFrequent(arr []string) string {
+func (g *Game) getMostFrequent(arr []string) (string, bool) {
 	cnt := make(map[string]int)
 
 	max_cnt := 0
 	most_frequent := ""
+	is_unique := false
+
 	for _, elem := range arr {
 		cnt[elem] += 1
 
 		if cnt[elem] > max_cnt {
 			max_cnt = cnt[elem]
 			most_frequent = elem
+			is_unique = true
+		} else if cnt[elem] == max_cnt {
+			// not unique variant
+			is_unique = false
 		}
 	}
 
-	return most_frequent
+	fmt.Println(cnt)
+
+	return most_frequent, is_unique
 }
 
 func (g *Game) day() {
@@ -374,10 +386,14 @@ func (g *Game) day() {
 	g.requestVotes(g.alive_players)
 	g.actions.Wait()
 
-	to_kill := g.getMostFrequent(g.kill_votes)
+	to_kill, is_unique := g.getMostFrequent(g.kill_votes)
 
-	g.sendMsgToAll(fmt.Sprintf("%s was killed", to_kill))
-	g.kill(to_kill)
+	if is_unique {
+		g.sendMsgToAll(fmt.Sprintf("%s was killed", to_kill))
+		g.kill(to_kill)
+	} else {
+		g.sendMsgToAll("people did not come to a consensus")
+	}
 
 	g.changeState()
 }
@@ -395,13 +411,20 @@ func (g *Game) night() {
 	g.requestVotes(g.sheriffs)
 	g.actions.Wait()
 
-	to_kill := g.getMostFrequent(g.kill_votes)
+	to_kill, is_unique := g.getMostFrequent(g.kill_votes)
+	if is_unique {
+		g.sendMsgToAll(fmt.Sprintf("mafia killed %s", to_kill))
+		g.kill(to_kill)
+	} else {
+		g.sendMsgToAll("mafia did not come to a consensus")
+	}
 
-	g.sendMsgToAll(fmt.Sprintf("mafia killed %s", to_kill))
-	g.kill(to_kill)
-
-	to_check := g.getMostFrequent(g.check_votes)
-	g.sendCheckResult(to_check)
+	to_check, is_unique := g.getMostFrequent(g.check_votes)
+	if is_unique {
+		g.sendCheckResult(to_check)
+	} else {
+		g.sendMsgToAll("sheriffs did not come to a consensus")
+	}
 
 	g.changeState()
 }
@@ -442,7 +465,7 @@ func (g *Game) changeState() {
 
 	if mafia_cnt == 0 {
 		g.state = WinSheriffs
-	} else if mafia_cnt >= civilian_cnt {
+	} else if mafia_cnt > civilian_cnt {
 		g.state = WinMafia
 	} else {
 		g.state = (g.state + 1) % 2

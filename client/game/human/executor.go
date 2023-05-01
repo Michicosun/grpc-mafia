@@ -52,6 +52,8 @@ func (hi *humanInteractor) Executor(in string) {
 		game.Session.Stop()
 	case "publish":
 		grpc.Connection.SendPublishRequest(game.Session.MafiaName)
+	case "exit":
+		// execution will disrupted via exit function
 	default:
 		fmt.Println("unrecognized command")
 	}

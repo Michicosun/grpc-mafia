@@ -37,6 +37,8 @@ func startListening(interactor IInteractor) error {
 			Session.HandleSystemMessage(event.GetMessage())
 		case mafia.EventType_MafiaCheckResponse:
 			Session.HandleMafiaCheckResponse(event.GetMafiaCheckResponse())
+		case mafia.EventType_Publish:
+			Session.HandlePublish(event.GetPublish())
 		case mafia.EventType_Death:
 			Session.HandleDeath(event.GetDeath())
 		case mafia.EventType_GameEnd:
