@@ -465,7 +465,7 @@ func (g *Game) changeState() {
 
 	if mafia_cnt == 0 {
 		g.state = WinSheriffs
-	} else if mafia_cnt > civilian_cnt {
+	} else if mafia_cnt >= civilian_cnt+sheriffs_cnt {
 		g.state = WinMafia
 	} else {
 		g.state = (g.state + 1) % 2
