@@ -265,15 +265,12 @@ func (g *Game) waitEventsFrom(grp map[string]struct{}) {
 func (g *Game) assignRoles() {
 	max_group_cnt := (g.players_cnt - 1) / 2
 
-	fmt.Println(max_group_cnt)
-
 	civilians := make([]string, 0)
 
 	for player := range g.alive_players {
 		role := randRole()
 
 		if role == mafia.Role_Mafia && len(g.mafia) < int(max_group_cnt) {
-			fmt.Println("mafia add", len(g.mafia))
 			g.mafia[player] = struct{}{}
 			g.playersRole[player] = mafia.Role_Mafia
 		} else {
@@ -281,7 +278,6 @@ func (g *Game) assignRoles() {
 		}
 
 		if role == mafia.Role_Sheriff && len(g.sheriffs) < int(max_group_cnt) {
-			fmt.Println("sheriff add", len(g.sheriffs))
 			g.sheriffs[player] = struct{}{}
 			g.playersRole[player] = mafia.Role_Sheriff
 		} else {
@@ -292,10 +288,6 @@ func (g *Game) assignRoles() {
 			civilians = append(civilians, player)
 		}
 	}
-
-	fmt.Println(len(civilians))
-	fmt.Println(len(g.mafia))
-	fmt.Println(len(g.sheriffs))
 
 	if len(g.mafia) == 0 {
 		player := civilians[0]
@@ -316,11 +308,6 @@ func (g *Game) Start() {
 	defer g.mtx.Unlock()
 
 	g.assignRoles()
-
-	for player := range g.alive_players {
-		fmt.Println(player, g.playersRole[player])
-	}
-
 	g.sendStartGame()
 
 	// prepare phase
@@ -371,8 +358,6 @@ func (g *Game) getMostFrequent(arr []string) (string, bool) {
 			is_unique = false
 		}
 	}
-
-	fmt.Println(cnt)
 
 	return most_frequent, is_unique
 }
