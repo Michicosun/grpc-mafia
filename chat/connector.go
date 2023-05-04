@@ -11,6 +11,7 @@ import (
 var Connector = &connector{}
 
 type connector struct {
+	local_port string
 	socket     net.PacketConn
 	coord_addr net.Addr
 }
@@ -92,21 +93,29 @@ func (c *connector) RecvMessage() (*Message, error) {
 	return &msg, nil
 }
 
-func (c *connector) Init(port_to_listen uint32, coord_hostname string, coord_port uint32) error {
-	coord_conn := fmt.Sprintf("%s:%d", coord_hostname, coord_port)
+func (c *connector) GetLocalPort() string {
+	return c.local_port
+}
 
-	addr, err := net.ResolveUDPAddr("udp4", coord_conn)
+func (c *connector) Init(coord_hostname string, coord_port string) error {
+	coord_conn := fmt.Sprintf("%s:%s", coord_hostname, coord_port)
+
+	addr, err := net.ResolveUDPAddr("udp", coord_conn)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("resolve addr: %s", coord_conn))
 	}
 
-	socket, err := net.ListenPacket("udp", fmt.Sprintf(":%d", port_to_listen))
+	socket, err := net.ListenPacket("udp", ":0")
 	if err != nil {
 		return errors.Wrap(err, "create udp socket")
 	}
 
+	Connector.local_port = fmt.Sprintf("%d", socket.LocalAddr().(*net.UDPAddr).Port)
 	Connector.coord_addr = addr
 	Connector.socket = socket
+
+	fmt.Printf("using: %s as local chat port\n", Connector.local_port)
+	fmt.Printf("chat coordinator: %s\n", Connector.coord_addr)
 
 	return nil
 }

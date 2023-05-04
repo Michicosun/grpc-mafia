@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"os"
 
 	"github.com/pkg/errors"
 	zlog "github.com/rs/zerolog/log"
@@ -95,7 +94,7 @@ func (c *Coordinator) createGroup(r *CreateGroupRequest) {
 	addrs := make([]net.Addr, 0)
 
 	for _, addr := range r.Addrs {
-		net_addr, err := net.ResolveUDPAddr("udp4", addr)
+		net_addr, err := net.ResolveUDPAddr("udp", addr)
 		if err != nil {
 			zlog.Error().Err(err).Str("address", addr).Msg("cannot resolve address")
 			continue
@@ -132,9 +131,7 @@ func (c *Coordinator) CreateGroup(group_name string, addrs []net.Addr) {
 	c.groups[group_name] = addrs
 }
 
-func MakeCoordinator() (*Coordinator, error) {
-	port := os.Getenv("PORT")
-
+func MakeCoordinator(port string) (*Coordinator, error) {
 	zlog.Info().Str("port", port).Msg("configure udp socket")
 
 	socket, err := net.ListenPacket("udp", fmt.Sprintf(":%s", port))
