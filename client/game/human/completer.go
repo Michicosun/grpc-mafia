@@ -75,7 +75,7 @@ var msg_suggests = []prompt.Suggest{
 var publish_suggest = prompt.Suggest{Text: "publish", Description: "publish mafia name"}
 
 func makeStateSuggestions() []prompt.Suggest {
-	s := stateToSuggestions[game.Session.State]
+	s := stateToSuggestions[game.Session.GetState()]
 
 	if game.Session.MafiaCheck {
 		s = append(s, publish_suggest)

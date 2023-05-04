@@ -12,7 +12,7 @@ func startListening(interactor IInteractor) error {
 	stream := grpc.Connection.GetStream()
 
 	for {
-		if Session.State == Undefined {
+		if Session.GetState() == Undefined {
 			PrintLine("log", "game stopped -> stop listening", interactor)
 			return nil
 		}

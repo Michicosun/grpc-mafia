@@ -12,6 +12,8 @@ func (hi *humanInteractor) Executor(in string) {
 	blocks := strings.Split(in, " ")
 
 	switch blocks[0] {
+	case "":
+		return
 	case "connect":
 		if len(blocks) != 2 {
 			fmt.Println("need to provide login as parameter")

@@ -21,7 +21,7 @@ const (
 type session struct {
 	Name string
 
-	State        GameState
+	state        GameState
 	Role         mafia.Role
 	AlivePlayers map[string]struct{}
 	Group        map[string]struct{}
@@ -33,8 +33,15 @@ type session struct {
 }
 
 func (s *session) ChangeState(new_state GameState) {
-	s.State = new_state
-	s.Interactor.Signal()
+	s.state = new_state
+
+	if s.Interactor != nil {
+		s.Interactor.Signal()
+	}
+}
+
+func (s *session) GetState() GameState {
+	return s.state
 }
 
 func (s *session) ClearMafiaCheck() {
@@ -43,11 +50,13 @@ func (s *session) ClearMafiaCheck() {
 }
 
 func (s *session) Init() {
-	s.State = Undefined
 	s.Role = mafia.Role_Civilian
+	s.ChangeState(Undefined)
 }
 
 func (s *session) Start(name string) error {
+	s.clearGame()
+
 	if err := grpc.Connection.CreateStream(); err != nil {
 		return err
 	}
@@ -116,4 +125,11 @@ func (s *session) HandleDeath(e *mafia.Event_Death) {
 func (s *session) HandleGameEnd(e *mafia.Event_GameEnd) {
 	PrintLine("system", e.GetText(), s.Interactor)
 	s.Stop()
+}
+
+func (s *session) clearGame() {
+	s.Name = ""
+	s.state = Undefined
+	s.Role = mafia.Role_Civilian
+	s.ClearMafiaCheck()
 }
