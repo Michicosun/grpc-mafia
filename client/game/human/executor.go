@@ -37,18 +37,16 @@ func (hi *humanInteractor) Executor(in string) {
 			fmt.Println("need to specify who you are voting for")
 			return
 		}
+		game.Session.ChangeState(game.Waiting, false)
 		if err := grpc.Connection.SendVote(game.Session.Name, blocks[1]); err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
 			game.Session.Stop()
-		} else {
-			game.Session.ChangeState(game.Waiting)
 		}
 	case "nothing":
+		game.Session.ChangeState(game.Waiting, false)
 		if err := grpc.Connection.SendDoNothing(game.Session.Name); err != nil {
 			fmt.Printf("ERROR: %s\n", err.Error())
 			game.Session.Stop()
-		} else {
-			game.Session.ChangeState(game.Waiting)
 		}
 	case "disconnect":
 		game.Session.Stop()

@@ -32,10 +32,10 @@ type session struct {
 	Interactor IInteractor
 }
 
-func (s *session) ChangeState(new_state GameState) {
+func (s *session) ChangeState(new_state GameState, use_signal bool) {
 	s.state = new_state
 
-	if s.Interactor != nil {
+	if use_signal && s.Interactor != nil {
 		s.Interactor.Signal()
 	}
 }
@@ -51,7 +51,7 @@ func (s *session) ClearMafiaCheck() {
 
 func (s *session) Init() {
 	s.Role = mafia.Role_Civilian
-	s.ChangeState(Undefined)
+	s.ChangeState(Undefined, true)
 }
 
 func (s *session) Start(name string) error {
@@ -66,14 +66,14 @@ func (s *session) Start(name string) error {
 	}
 
 	s.Name = name
-	s.ChangeState(Waiting)
+	s.ChangeState(Waiting, false)
 	go startListening(s.Interactor)
 
 	return nil
 }
 
 func (s *session) Stop() {
-	s.ChangeState(Undefined)
+	s.ChangeState(Undefined, true)
 	grpc.Connection.CloseStream()
 }
 
@@ -90,11 +90,11 @@ func (s *session) HandleGameStart(e *mafia.Event_GameStart) {
 		s.Group[player] = struct{}{}
 	}
 
-	s.ChangeState(PrepareState)
+	s.ChangeState(PrepareState, true)
 }
 
 func (s *session) HandleVoteRequest(e *mafia.Event_VoteRequest) {
-	s.ChangeState(NeedVote)
+	s.ChangeState(NeedVote, true)
 }
 
 func (s *session) HandleSystemMessage(e *mafia.Event_SystemMessage) {
@@ -118,7 +118,7 @@ func (s *session) HandleDeath(e *mafia.Event_Death) {
 
 	if e.Name == s.Name {
 		// user was killed
-		s.ChangeState(Ghost)
+		s.ChangeState(Ghost, false)
 	}
 }
 

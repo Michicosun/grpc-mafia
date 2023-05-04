@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net"
 	"os"
+	"time"
 
 	"grpc-mafia/logger"
 	"grpc-mafia/server"
@@ -17,6 +19,8 @@ import (
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	logger.Init()
 
 	port := os.Getenv("PORT")

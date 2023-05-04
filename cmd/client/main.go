@@ -1,22 +1,21 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	client "grpc-mafia/client"
 	game "grpc-mafia/client/game"
 	grpc "grpc-mafia/client/grpc"
+	"math/rand"
 	"os"
+	"time"
 )
 
 func main() {
-	var grpc_host string
-	var grpc_port string
+	rand.Seed(time.Now().UnixNano())
 
-	flag.StringVar(&grpc_host, "grpc_host", "localhost", "host of grpc game service")
-	flag.StringVar(&grpc_port, "grpc_port", "9000", "port of grpc game service")
-
-	flag.Parse()
+	grpc_host := os.Getenv("SRV_HOST")
+	grpc_port := os.Getenv("SRV_PORT")
+	_, use_bot := os.LookupEnv("USE_BOT")
 
 	if err := grpc.Connection.Init(grpc_host, grpc_port); err != nil {
 		fmt.Printf("ERROR: %e\n", err)
@@ -24,7 +23,9 @@ func main() {
 	}
 
 	game.Session.Init()
-	client := client.MakeClient(false)
+	client := client.MakeClient(use_bot)
 
 	client.Run()
 }
+
+// USE_BOT=yes SRV_HOST=localhost SRV_PORT=9000 go run client/main.go
