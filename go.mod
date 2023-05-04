@@ -4,11 +4,11 @@ go 1.19
 
 require (
 	github.com/golang/protobuf v1.5.3
+	github.com/google/uuid v1.3.0
 	google.golang.org/grpc v1.54.0
 )
 
 require (
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
