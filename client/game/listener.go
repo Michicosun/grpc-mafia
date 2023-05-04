@@ -1,7 +1,6 @@
 package game
 
 import (
-	"fmt"
 	mafia "grpc-mafia/server/proto"
 
 	"grpc-mafia/client/grpc"
@@ -13,7 +12,6 @@ func startListening(interactor IInteractor) error {
 
 	for {
 		if Session.GetState() == Undefined {
-			PrintLine("log", "game stopped -> stop listening", interactor)
 			return nil
 		}
 
@@ -25,8 +23,6 @@ func startListening(interactor IInteractor) error {
 		if err != nil {
 			return err
 		}
-
-		PrintLine("log", fmt.Sprintf("read event: %s", event.GetType().String()), interactor)
 
 		switch event.GetType() {
 		case mafia.EventType_GameStart:

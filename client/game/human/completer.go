@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"grpc-mafia/client/game"
 	mafia "grpc-mafia/server/proto"
+	"sort"
 	"strings"
 
 	"github.com/c-bata/go-prompt"
@@ -108,6 +109,10 @@ func makeAlivePlayersSuggestions() []prompt.Suggest {
 			Text: player, Description: "alive player",
 		})
 	}
+
+	sort.SliceStable(players, func(i, j int) bool {
+		return players[i].Text < players[j].Text
+	})
 
 	return players
 }

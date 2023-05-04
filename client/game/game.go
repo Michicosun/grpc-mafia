@@ -37,6 +37,7 @@ func (s *session) ChangeState(new_state GameState, use_signal bool) {
 
 	if use_signal && s.Interactor != nil {
 		s.Interactor.Signal()
+		RefreshLine(s.Interactor)
 	}
 }
 
