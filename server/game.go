@@ -2,13 +2,18 @@ package server
 
 import (
 	"fmt"
+	"grpc-mafia/chat"
 	mafia "grpc-mafia/server/proto"
+	"grpc-mafia/util"
 	"math/rand"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 type Player struct {
 	send_chan chan *mafia.Event
+	connect   string
 }
 
 type GameState uint32
@@ -26,6 +31,7 @@ type Game struct {
 	playersInfo map[string]Player
 	playersRole map[string]mafia.Role
 
+	session_id    string
 	alive_players map[string]struct{}
 	ghosts        map[string]struct{}
 	mafia         map[string]struct{}
@@ -44,7 +50,7 @@ type Game struct {
 // Control methods
 /////////////////////////////////////////////
 
-func (g *Game) Join(name string) (<-chan *mafia.Event, bool) {
+func (g *Game) Join(name string, connect string) (<-chan *mafia.Event, bool) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
 
@@ -52,6 +58,7 @@ func (g *Game) Join(name string) (<-chan *mafia.Event, bool) {
 
 	g.playersInfo[name] = Player{
 		send_chan: stream,
+		connect:   connect,
 	}
 
 	g.alive_players[name] = struct{}{}
@@ -60,6 +67,7 @@ func (g *Game) Join(name string) (<-chan *mafia.Event, bool) {
 
 	is_started := len(g.alive_players) == int(g.players_cnt)
 	if is_started {
+		g.session_id = uuid.New().String()
 		go g.Start()
 	}
 
@@ -132,6 +140,35 @@ func (g *Game) Disconnect(player string) {
 	}
 }
 
+func (g *Game) createConnectList(grp map[string]struct{}) []string {
+	connect_list := make([]string, 0)
+
+	for player := range grp {
+		connect_list = append(connect_list, g.playersInfo[player].connect)
+	}
+
+	fmt.Println(connect_list)
+
+	return connect_list
+}
+
+func (g *Game) registerChatGroups() {
+	chat.Connector.CreateGroup(
+		util.ChatGroupName(g.session_id, "all"),
+		g.createConnectList(g.alive_players),
+	)
+
+	chat.Connector.CreateGroup(
+		util.ChatGroupName(g.session_id, mafia.Role_Mafia.String()),
+		g.createConnectList(g.mafia),
+	)
+
+	chat.Connector.CreateGroup(
+		util.ChatGroupName(g.session_id, mafia.Role_Sheriff.String()),
+		g.createConnectList(g.sheriffs),
+	)
+}
+
 /////////////////////////////////////////////
 // Send Message methods
 /////////////////////////////////////////////
@@ -168,9 +205,10 @@ func (g *Game) sendStartGame() {
 			Type: mafia.EventType_GameStart,
 			Data: &mafia.Event_GameStart_{
 				GameStart: &mafia.Event_GameStart{
-					Role:    g.playersRole[player],
-					Players: mapToArray(g.alive_players),
-					Group:   g.getRoleGroup(player),
+					SessionId: g.session_id,
+					Role:      g.playersRole[player],
+					Players:   mapToArray(g.alive_players),
+					Group:     g.getRoleGroup(player),
 				},
 			},
 		}
@@ -308,6 +346,8 @@ func (g *Game) Start() {
 	defer g.mtx.Unlock()
 
 	g.assignRoles()
+	g.registerChatGroups()
+
 	g.sendStartGame()
 
 	// prepare phase

@@ -2,8 +2,10 @@ package game
 
 import (
 	"fmt"
+	"grpc-mafia/chat"
 	"grpc-mafia/client/game"
 	"grpc-mafia/client/grpc"
+	"grpc-mafia/util"
 	"strings"
 )
 
@@ -28,9 +30,15 @@ func (hi *humanInteractor) Executor(in string) {
 		}
 		switch blocks[1] {
 		case "all":
-			fmt.Printf("send to all: %s\n", blocks[2])
+			chat.Connector.MakeBCast(util.ChatGroupName(game.Session.SessionId, "all"), chat.Message{
+				From: game.Session.Name,
+				Text: blocks[2],
+			})
 		default:
-			fmt.Printf("send to %s: %s\n", blocks[1], blocks[2])
+			chat.Connector.MakeBCast(util.ChatGroupName(game.Session.SessionId, game.Session.Role.String()), chat.Message{
+				From: game.Session.Name,
+				Text: blocks[2],
+			})
 		}
 	case "vote":
 		if len(blocks) != 2 {

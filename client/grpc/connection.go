@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"grpc-mafia/chat"
 	mafia "grpc-mafia/server/proto"
 
 	"github.com/pkg/errors"
@@ -25,7 +26,8 @@ func (gc *connection) SendInit(name string) error {
 		Type: mafia.ActionType_Init,
 		Data: &mafia.Action_Init_{
 			Init: &mafia.Action_Init{
-				Name: name,
+				Name:     name,
+				ChatPort: chat.Connector.GetLocalPort(),
 			},
 		},
 	})

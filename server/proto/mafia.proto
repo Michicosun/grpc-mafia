@@ -16,7 +16,10 @@ enum ActionType {
 }
 
 message Action {
-  message Init { string name = 1; }
+  message Init {
+    string name = 1;
+    string chat_port = 2;
+  }
   message Vote {
     string from = 1;
     string name = 2;
@@ -50,9 +53,10 @@ enum Role {
 
 message Event {
   message GameStart {
-    Role role = 1;
-    repeated string players = 2;
-    repeated string group = 3;
+    string session_id = 1;
+    Role role = 2;
+    repeated string players = 3;
+    repeated string group = 4;
   }
   message VoteRequest {}
   message SystemMessage { string text = 1; }

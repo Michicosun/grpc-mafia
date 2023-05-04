@@ -19,7 +19,8 @@ const (
 )
 
 type session struct {
-	Name string
+	SessionId string
+	Name      string
 
 	state        GameState
 	Role         mafia.Role
@@ -79,6 +80,7 @@ func (s *session) Stop() {
 }
 
 func (s *session) HandleGameStart(e *mafia.Event_GameStart) {
+	s.SessionId = e.GetSessionId()
 	s.Role = e.Role
 	s.AlivePlayers = make(map[string]struct{})
 	s.Group = make(map[string]struct{})
@@ -129,6 +131,7 @@ func (s *session) HandleGameEnd(e *mafia.Event_GameEnd) {
 }
 
 func (s *session) clearGame() {
+	s.SessionId = ""
 	s.Name = ""
 	s.state = Undefined
 	s.Role = mafia.Role_Civilian
