@@ -1,0 +1,27 @@
+version: "3.4"
+
+x-common-variables:
+  &common-variables
+  CHAT_COORD_HOST: chat-coordinator
+  SRV_HOST: mafia-server
+  USE_BOT: use
+
+services:
+  chat-coordinator:
+    image: michicosun/chat-coordinator
+    ports:
+      - 20500:20500/udp
+  mafia-server:
+    image: michicosun/mafia-server
+    environment: *common-variables
+    ports:
+      - 9000:9000/tcp
+  bot-1:
+    image: michicosun/mafia-bot
+    environment: *common-variables
+  bot-2:
+    image: michicosun/mafia-bot
+    environment: *common-variables
+  bot-3:
+    image: michicosun/mafia-bot
+    environment: *common-variables
