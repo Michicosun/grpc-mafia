@@ -2,12 +2,15 @@ package server
 
 import (
 	mafia "grpc-mafia/server/proto"
+	"grpc-mafia/util"
+	"strconv"
 	"sync"
 )
 
 type GameStorage struct {
-	games   []*Game
-	pending *Game
+	players_cnt uint32
+	games       []*Game
+	pending     *Game
 
 	mtx sync.Mutex
 }
@@ -19,20 +22,23 @@ func (gs *GameStorage) JoinGame(name string, connect string) (<-chan *mafia.Even
 	game := gs.pending
 	stream, is_started := game.Join(name, connect)
 
-	player_cnt := 4 // TODO fetch environment
 	if is_started {
 		gs.games = append(gs.games, gs.pending)
-		gs.pending = NewGame(uint32(player_cnt))
+		gs.pending = NewGame(gs.players_cnt)
 	}
 
 	return stream, game
 }
 
 func MakeGameStorage() *GameStorage {
-	player_cnt := 4 // TODO fetch environment
+	players_cnt, err := strconv.Atoi(util.GetEnvWithDefault("PLAYERS_CNT", "4"))
+	if err != nil {
+		players_cnt = 4
+	}
 
 	return &GameStorage{
-		games:   make([]*Game, 0),
-		pending: NewGame(uint32(player_cnt)),
+		players_cnt: uint32(players_cnt),
+		games:       make([]*Game, 0),
+		pending:     NewGame(uint32(players_cnt)),
 	}
 }
