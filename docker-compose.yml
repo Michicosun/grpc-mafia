@@ -4,6 +4,7 @@ x-common-variables:
   &common-variables
   CHAT_COORD_HOST: chat-coordinator
   SRV_HOST: mafia-server
+  PLAYERS_CNT: 4
   USE_BOT: use
 
 services:

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	mafia "grpc-mafia/server/proto"
 	"grpc-mafia/util"
 	"strconv"
@@ -35,6 +36,8 @@ func MakeGameStorage() *GameStorage {
 	if err != nil {
 		players_cnt = 4
 	}
+
+	fmt.Printf("configured games of %d players\n", players_cnt)
 
 	return &GameStorage{
 		players_cnt: uint32(players_cnt),
