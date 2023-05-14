@@ -76,7 +76,6 @@ func (s *GameServer) GameWriter(stream mafia.MafiaService_FindGameServer, game *
 		action, err := stream.Recv()
 		if err == io.EOF {
 			zlog.Info().Msg("client disconnected -> writer disabled")
-			return nil
 		}
 
 		if err != nil {
