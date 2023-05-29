@@ -15,6 +15,10 @@ func GetEnvWithDefault(key string, default_value string) string {
 	return default_value
 }
 
-func ChatGroupName(session_id string, subgroup string) string {
-	return fmt.Sprintf("%s-%s", session_id, subgroup)
+func CreateExchangeName(session_id string, role string) string {
+	return fmt.Sprintf("%s-exchange-%s", session_id, role)
+}
+
+func CreateQueueName(session_id string, name string) string {
+	return fmt.Sprintf("%s-user-%s", session_id, name)
 }

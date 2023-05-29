@@ -19,9 +19,6 @@ import (
 )
 
 const (
-	DEFAULT_COORD_CHAT_HOST = "localhost"
-	DEFAULT_COORD_CHAT_PORT = "20500"
-
 	DEFAULT_GRPC_PORT = "9000"
 )
 

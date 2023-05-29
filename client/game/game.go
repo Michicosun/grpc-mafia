@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"grpc-mafia/client/chat"
 	"grpc-mafia/client/grpc"
 	mafia "grpc-mafia/server/proto"
 )
@@ -43,12 +44,16 @@ func (s *session) ChangeState(new_state GameState, use_signal bool) {
 	}
 }
 
-func (s *session) SetTime(received_time mafia.Time) {
+func (s *session) GetState() GameState {
+	return s.state
+}
+
+func (s *session) ChangeTime(received_time mafia.Time) {
 	s.time = received_time
 }
 
-func (s *session) GetState() GameState {
-	return s.state
+func (s *session) GetTime() mafia.Time {
+	return s.time
 }
 
 func (s *session) ClearMafiaCheck() {
@@ -82,6 +87,9 @@ func (s *session) Start(name string) error {
 func (s *session) Stop() {
 	s.ChangeState(Undefined, true)
 	grpc.Connection.CloseStream()
+
+	ChatPrinter.Stop()
+	chat.RabbitConnection.Close()
 }
 
 func (s *session) HandleGameStart(e *mafia.Event_GameStart) {
@@ -89,6 +97,9 @@ func (s *session) HandleGameStart(e *mafia.Event_GameStart) {
 	s.Role = e.Role
 	s.AlivePlayers = make(map[string]struct{})
 	s.Group = make(map[string]struct{})
+
+	chat.RabbitConnection.Establish(s.SessionId, s.Role, s.Name)
+	ChatPrinter.Start()
 
 	for _, player := range e.Players {
 		s.AlivePlayers[player] = struct{}{}
