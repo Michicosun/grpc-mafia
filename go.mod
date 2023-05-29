@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.0
+	github.com/rabbitmq/amqp091-go v1.8.1
 	google.golang.org/grpc v1.54.0
 )
 
@@ -13,7 +14,6 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/pkg/term v1.2.0-beta.2 // indirect
-	github.com/rabbitmq/amqp091-go v1.8.1 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
