@@ -5,10 +5,8 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"os"
 	"time"
 
-	"grpc-mafia/chat"
 	"grpc-mafia/logger"
 	"grpc-mafia/server"
 	"grpc-mafia/util"
@@ -27,21 +25,10 @@ const (
 	DEFAULT_GRPC_PORT = "9000"
 )
 
-func InitChatConnector() {
-	coord_host := util.GetEnvWithDefault("CHAT_COORD_HOST", DEFAULT_COORD_CHAT_HOST)
-	coord_port := util.GetEnvWithDefault("CHAT_COORD_PORT", DEFAULT_COORD_CHAT_PORT)
-
-	if err := chat.Connector.Init(coord_host, coord_port); err != nil {
-		fmt.Printf("ERROR: %s\n", err.Error())
-		os.Exit(1)
-	}
-}
-
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	logger.Init()
-	InitChatConnector()
 
 	port := util.GetEnvWithDefault("PORT", DEFAULT_GRPC_PORT)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))

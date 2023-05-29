@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"grpc-mafia/chat"
 	client "grpc-mafia/client"
 	game "grpc-mafia/client/game"
 	grpc "grpc-mafia/client/grpc"
@@ -20,20 +19,8 @@ const (
 	DEFAULT_SERVER_PORT = "9000"
 )
 
-func InitChatConnector() {
-	coord_host := util.GetEnvWithDefault("CHAT_COORD_HOST", DEFAULT_COORD_CHAT_HOST)
-	coord_port := util.GetEnvWithDefault("CHAT_COORD_PORT", DEFAULT_COORD_CHAT_PORT)
-
-	if err := chat.Connector.Init(coord_host, coord_port); err != nil {
-		fmt.Printf("ERROR: %s\n", err.Error())
-		os.Exit(1)
-	}
-}
-
 func main() {
 	rand.Seed(time.Now().UnixNano())
-
-	InitChatConnector()
 
 	grpc_host := util.GetEnvWithDefault("SRV_HOST", DEFAULT_SERVER_HOST)
 	grpc_port := util.GetEnvWithDefault("SRV_PORT", DEFAULT_SERVER_PORT)

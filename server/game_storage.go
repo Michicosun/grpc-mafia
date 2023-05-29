@@ -16,12 +16,12 @@ type GameStorage struct {
 	mtx sync.Mutex
 }
 
-func (gs *GameStorage) JoinGame(name string, connect string) (<-chan *mafia.Event, *Game) {
+func (gs *GameStorage) JoinGame(name string) (<-chan *mafia.Event, *Game) {
 	gs.mtx.Lock()
 	defer gs.mtx.Unlock()
 
 	game := gs.pending
-	stream, is_started := game.Join(name, connect)
+	stream, is_started := game.Join(name)
 
 	if is_started {
 		gs.games = append(gs.games, gs.pending)

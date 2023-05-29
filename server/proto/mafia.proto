@@ -16,10 +16,7 @@ enum ActionType {
 }
 
 message Action {
-  message Init {
-    string name = 1;
-    string chat_port = 2;
-  }
+  message Init { string name = 1; }
   message Vote {
     string from = 1;
     string name = 2;

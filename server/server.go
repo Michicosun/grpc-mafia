@@ -1,11 +1,6 @@
 package server
 
 import (
-	"net"
-	"strconv"
-
-	"google.golang.org/grpc/peer"
-
 	mafia "grpc-mafia/server/proto"
 	"io"
 
@@ -23,19 +18,11 @@ func (s *GameServer) FindGame(stream mafia.MafiaService_FindGameServer) error {
 		return err
 	}
 
-	p, _ := peer.FromContext(stream.Context())
-	raw_ip := p.Addr.(*net.TCPAddr).IP
-	raw_port, _ := strconv.Atoi(action.GetInit().ChatPort)
-
 	name := action.GetInit().Name
-	connect := (&net.UDPAddr{
-		IP:   raw_ip,
-		Port: raw_port,
-	}).String()
 
-	zlog.Info().Str("name", name).Str("addr", connect).Msg("get connection of user")
+	zlog.Info().Str("name", name).Msg("get connection of user")
 
-	events, game := s.gs.JoinGame(name, connect)
+	events, game := s.gs.JoinGame(name)
 
 	go func() {
 		if err = s.GameListener(stream, events); err != nil {

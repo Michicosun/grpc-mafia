@@ -2,10 +2,8 @@ package game
 
 import (
 	"fmt"
-	"grpc-mafia/chat"
 	"grpc-mafia/client/game"
 	"grpc-mafia/client/grpc"
-	"grpc-mafia/util"
 	"strings"
 )
 
@@ -24,22 +22,22 @@ func (hi *humanInteractor) Executor(in string) {
 			game.Session.Start(blocks[1])
 		}
 	case "message":
-		if len(blocks) != 3 {
-			fmt.Println("need to provide which group is this message for")
-			return
-		}
-		switch blocks[1] {
-		case "all":
-			chat.Connector.MakeBCast(util.ChatGroupName(game.Session.SessionId, "all"), chat.Message{
-				From: game.Session.Name,
-				Text: blocks[2],
-			})
-		default:
-			chat.Connector.MakeBCast(util.ChatGroupName(game.Session.SessionId, game.Session.Role.String()), chat.Message{
-				From: game.Session.Name,
-				Text: blocks[2],
-			})
-		}
+		// if len(blocks) != 3 {
+		// 	fmt.Println("need to provide which group is this message for")
+		// 	return
+		// }
+		// switch blocks[1] {
+		// case "all":
+		// 	chat.Connector.MakeBCast(util.ChatGroupName(game.Session.SessionId, "all"), chat.Message{
+		// 		From: game.Session.Name,
+		// 		Text: blocks[2],
+		// 	})
+		// default:
+		// 	chat.Connector.MakeBCast(util.ChatGroupName(game.Session.SessionId, game.Session.Role.String()), chat.Message{
+		// 		From: game.Session.Name,
+		// 		Text: blocks[2],
+		// 	})
+		// }
 	case "vote":
 		if len(blocks) != 2 {
 			fmt.Println("need to specify who you are voting for")

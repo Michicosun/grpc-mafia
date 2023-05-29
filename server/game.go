@@ -2,9 +2,7 @@ package server
 
 import (
 	"fmt"
-	"grpc-mafia/chat"
 	mafia "grpc-mafia/server/proto"
-	"grpc-mafia/util"
 	"math/rand"
 	"sync"
 
@@ -13,7 +11,6 @@ import (
 
 type Player struct {
 	send_chan chan *mafia.Event
-	connect   string
 }
 
 type GameState uint32
@@ -50,7 +47,7 @@ type Game struct {
 // Control methods
 /////////////////////////////////////////////
 
-func (g *Game) Join(name string, connect string) (<-chan *mafia.Event, bool) {
+func (g *Game) Join(name string) (<-chan *mafia.Event, bool) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
 
@@ -58,7 +55,6 @@ func (g *Game) Join(name string, connect string) (<-chan *mafia.Event, bool) {
 
 	g.playersInfo[name] = Player{
 		send_chan: stream,
-		connect:   connect,
 	}
 
 	g.alive_players[name] = struct{}{}
@@ -138,35 +134,6 @@ func (g *Game) Disconnect(player string) {
 	if len(g.need_events_from) == 0 {
 		g.actions.Signal()
 	}
-}
-
-func (g *Game) createConnectList(grp map[string]struct{}) []string {
-	connect_list := make([]string, 0)
-
-	for player := range grp {
-		connect_list = append(connect_list, g.playersInfo[player].connect)
-	}
-
-	fmt.Println(connect_list)
-
-	return connect_list
-}
-
-func (g *Game) registerChatGroups() {
-	chat.Connector.CreateGroup(
-		util.ChatGroupName(g.session_id, "all"),
-		g.createConnectList(g.alive_players),
-	)
-
-	chat.Connector.CreateGroup(
-		util.ChatGroupName(g.session_id, mafia.Role_Mafia.String()),
-		g.createConnectList(g.mafia),
-	)
-
-	chat.Connector.CreateGroup(
-		util.ChatGroupName(g.session_id, mafia.Role_Sheriff.String()),
-		g.createConnectList(g.sheriffs),
-	)
 }
 
 /////////////////////////////////////////////
@@ -346,8 +313,6 @@ func (g *Game) Start() {
 	defer g.mtx.Unlock()
 
 	g.assignRoles()
-	g.registerChatGroups()
-
 	g.sendStartGame()
 
 	// prepare phase

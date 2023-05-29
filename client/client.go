@@ -1,7 +1,6 @@
 package client
 
 import (
-	"grpc-mafia/chat"
 	game "grpc-mafia/client/game"
 	bot "grpc-mafia/client/game/bot"
 	human "grpc-mafia/client/game/human"
@@ -16,7 +15,7 @@ func MakeClient(use_bot bool) game.IInteractor {
 		interactor = makeHumanClient()
 	}
 
-	runChatPrinter(interactor)
+	// runChatPrinter(interactor)
 
 	return interactor
 }
@@ -31,15 +30,15 @@ func makeBotClient() game.IInteractor {
 	return game.Session.Interactor
 }
 
-func runChatPrinter(interactor game.IInteractor) {
-	go func() {
-		for {
-			msg, err := chat.Connector.RecvMessage()
-			if err != nil {
-				game.PrintLine("ERROR", err.Error(), interactor)
-			} else {
-				game.PrintLine(msg.From, msg.Text, interactor)
-			}
-		}
-	}()
-}
+// func runChatPrinter(interactor game.IInteractor) {
+// 	go func() {
+// 		for {
+// 			msg, err := chat.Connector.RecvMessage()
+// 			if err != nil {
+// 				game.PrintLine("ERROR", err.Error(), interactor)
+// 			} else {
+// 				game.PrintLine(msg.From, msg.Text, interactor)
+// 			}
+// 		}
+// 	}()
+// }
