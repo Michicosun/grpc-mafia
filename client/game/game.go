@@ -95,7 +95,7 @@ func (s *session) Stop() {
 }
 
 func (s *session) StopWithError(err error) {
-	fmt.Printf("ERROR: %s\n", err.Error())
+	PrintLine("ERROR", err.Error(), s.Interactor)
 	s.Stop()
 }
 
