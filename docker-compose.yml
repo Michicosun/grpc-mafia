@@ -2,8 +2,8 @@ version: "3.4"
 
 x-common-variables:
   &common-variables
-  CHAT_COORD_HOST: chat-coordinator
   SRV_HOST: mafia-server
+  RABBIT_HOST: rabbitmq
   PLAYERS_CNT: 4
   USE_BOT: use
 
@@ -13,17 +13,17 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-  # mafia-server:
-  #   image: michicosun/mafia-server
-  #   environment: *common-variables
-  #   ports:
-  #     - 9000:9000/tcp
-  # bot-1:
-  #   image: michicosun/mafia-bot
-  #   environment: *common-variables
-  # bot-2:
-  #   image: michicosun/mafia-bot
-  #   environment: *common-variables
-  # bot-3:
-  #   image: michicosun/mafia-bot
-  #   environment: *common-variables
+  mafia-server:
+    image: michicosun/mafia-server
+    environment: *common-variables
+    ports:
+      - 9000:9000/tcp
+  bot-1:
+    image: michicosun/mafia-bot
+    environment: *common-variables
+  bot-2:
+    image: michicosun/mafia-bot
+    environment: *common-variables
+  bot-3:
+    image: michicosun/mafia-bot
+    environment: *common-variables
