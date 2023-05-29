@@ -3,29 +3,32 @@ package game
 import (
 	"encoding/json"
 	"grpc-mafia/client/chat"
-
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 var ChatPrinter = &chatPrinter{}
 
 type chatPrinter struct {
-	msgs    <-chan amqp.Delivery
 	stop_ch chan struct{}
 }
 
 func (cp *chatPrinter) Start() {
 	go func() {
-		cp.msgs = chat.RabbitConnection.GetMsgsChat()
 		cp.stop_ch = make(chan struct{}, 1)
+
+		msgs, err := chat.RabbitConnection.GetMsgsChat()
+		if err != nil {
+			Session.StopWithError(err)
+			return
+		}
 
 		for {
 			select {
-			case raw_msg := <-cp.msgs:
+			case raw_msg := <-msgs:
 				msg := chat.Message{}
 
 				if err := json.Unmarshal(raw_msg.Body, &msg); err != nil {
-					panic(err)
+					Session.StopWithError(err)
+					return
 				}
 
 				PrintLine(msg.User, msg.Text, Session.Interactor)

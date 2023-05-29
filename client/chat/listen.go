@@ -4,7 +4,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-func (c *rabbitConnection) GetMsgsChat() <-chan amqp.Delivery {
+func (c *rabbitConnection) GetMsgsChat() (<-chan amqp.Delivery, error) {
 	msgs, err := c.ch.Consume(
 		c.q.Name, // queue
 		"",       // consumer
@@ -15,8 +15,8 @@ func (c *rabbitConnection) GetMsgsChat() <-chan amqp.Delivery {
 		nil,      // args
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return msgs
+	return msgs, nil
 }

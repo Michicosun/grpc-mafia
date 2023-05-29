@@ -89,7 +89,14 @@ func (s *session) Stop() {
 	grpc.Connection.CloseStream()
 
 	ChatPrinter.Stop()
-	chat.RabbitConnection.Close()
+	if err := chat.RabbitConnection.Close(); err != nil {
+		PrintLine("system", err.Error(), s.Interactor)
+	}
+}
+
+func (s *session) StopWithError(err error) {
+	fmt.Printf("ERROR: %s\n", err.Error())
+	s.Stop()
 }
 
 func (s *session) HandleGameStart(e *mafia.Event_GameStart) {
@@ -98,8 +105,11 @@ func (s *session) HandleGameStart(e *mafia.Event_GameStart) {
 	s.AlivePlayers = make(map[string]struct{})
 	s.Group = make(map[string]struct{})
 
-	chat.RabbitConnection.Establish(s.SessionId, s.Role, s.Name)
-	ChatPrinter.Start()
+	if err := chat.RabbitConnection.Establish(s.SessionId, s.Role, s.Name); err != nil {
+		s.StopWithError(err)
+	} else {
+		ChatPrinter.Start()
+	}
 
 	for _, player := range e.Players {
 		s.AlivePlayers[player] = struct{}{}

@@ -37,14 +37,18 @@ func (hi *humanInteractor) Executor(in string) {
 					fmt.Println("sending messages is not allowed")
 					return
 				} else {
-					chat.RabbitConnection.SendMessage(game.Session.Name, blocks[2], int32(mafia.Role_Civilian))
+					if err := chat.RabbitConnection.SendMessage(game.Session.Name, blocks[2], int32(mafia.Role_Civilian)); err != nil {
+						game.Session.StopWithError(err)
+					}
 				}
 			default:
 				if game.Session.Role == mafia.Role_Civilian || !AllowMessage(game.Session.Role) {
 					fmt.Println("sending messages is not allowed")
 					return
 				} else {
-					chat.RabbitConnection.SendMessage(game.Session.Name, blocks[2], int32(game.Session.Role))
+					if err := chat.RabbitConnection.SendMessage(game.Session.Name, blocks[2], int32(game.Session.Role)); err != nil {
+						game.Session.StopWithError(err)
+					}
 				}
 			}
 		}
@@ -58,8 +62,7 @@ func (hi *humanInteractor) Executor(in string) {
 		} else {
 			game.Session.ChangeState(game.Waiting, false)
 			if err := grpc.Connection.SendVote(game.Session.Name, blocks[1]); err != nil {
-				fmt.Printf("ERROR: %s\n", err.Error())
-				game.Session.Stop()
+				game.Session.StopWithError(err)
 			}
 		}
 	case "nothing":
@@ -69,8 +72,7 @@ func (hi *humanInteractor) Executor(in string) {
 		} else {
 			game.Session.ChangeState(game.Waiting, false)
 			if err := grpc.Connection.SendDoNothing(game.Session.Name); err != nil {
-				fmt.Printf("ERROR: %s\n", err.Error())
-				game.Session.Stop()
+				game.Session.StopWithError(err)
 			}
 		}
 	case "disconnect":
