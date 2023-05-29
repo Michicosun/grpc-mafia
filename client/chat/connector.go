@@ -35,21 +35,7 @@ func (c *rabbitConnection) createConnectionString() string {
 	return fmt.Sprintf("amqp://%s:%s@%s:%s/", c.creds.User, c.creds.Pass, c.creds.Host, c.creds.Port)
 }
 
-func (c *rabbitConnection) Establish(session_id string, role mafia.Role, name string) {
-	c.exchs = make([]string, 3)
-
-	conn, err := amqp.Dial(c.createConnectionString())
-	if err != nil {
-		panic(err)
-	}
-	c.conn = conn
-
-	ch, err := c.conn.Channel()
-	if err != nil {
-		panic(err)
-	}
-	c.ch = ch
-
+func (c *rabbitConnection) createExchanges(session_id string, role mafia.Role) {
 	c.exchs[mafia.Role_Civilian] = session_id
 	if err := c.ch.ExchangeDeclare(
 		session_id, // name
@@ -77,8 +63,10 @@ func (c *rabbitConnection) Establish(session_id string, role mafia.Role, name st
 			panic(err)
 		}
 	}
+}
 
-	q, err := ch.QueueDeclare(
+func (c *rabbitConnection) createQueue(session_id string, name string) {
+	q, err := c.ch.QueueDeclare(
 		util.CreateQueueName(session_id, name), // name
 		false,                                  // durable
 		false,                                  // delete when unused
@@ -90,9 +78,11 @@ func (c *rabbitConnection) Establish(session_id string, role mafia.Role, name st
 		panic(err)
 	}
 	c.q = &q
+}
 
-	if err := ch.QueueBind(
-		q.Name,     // queue name
+func (c *rabbitConnection) bindQueue(session_id string, role mafia.Role) {
+	if err := c.ch.QueueBind(
+		c.q.Name,   // queue name
 		"",         // routing key
 		session_id, // exchange
 		false,
@@ -102,9 +92,9 @@ func (c *rabbitConnection) Establish(session_id string, role mafia.Role, name st
 	}
 
 	if role != mafia.Role_Civilian {
-		if err := ch.QueueBind(
-			q.Name, // queue name
-			"",     // routing key
+		if err := c.ch.QueueBind(
+			c.q.Name, // queue name
+			"",       // routing key
 			util.CreateExchangeName(session_id, role.String()), // exchange
 			false,
 			nil,
@@ -112,6 +102,26 @@ func (c *rabbitConnection) Establish(session_id string, role mafia.Role, name st
 			panic(err)
 		}
 	}
+}
+
+func (c *rabbitConnection) Establish(session_id string, role mafia.Role, name string) {
+	c.exchs = make([]string, 3)
+
+	conn, err := amqp.Dial(c.createConnectionString())
+	if err != nil {
+		panic(err)
+	}
+	c.conn = conn
+
+	ch, err := c.conn.Channel()
+	if err != nil {
+		panic(err)
+	}
+	c.ch = ch
+
+	c.createExchanges(session_id, role)
+	c.createQueue(session_id, name)
+	c.bindQueue(session_id, role)
 }
 
 func (c *rabbitConnection) Close() {
