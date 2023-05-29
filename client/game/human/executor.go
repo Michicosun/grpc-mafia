@@ -27,8 +27,8 @@ func (hi *humanInteractor) Executor(in string) {
 			game.Session.Start(blocks[1])
 		}
 	case "message":
-		if len(blocks) != 3 {
-			fmt.Println("need to provide which group is this message for")
+		if len(blocks) < 3 {
+			fmt.Println("need to provide which group is this message for and message text")
 			return
 		} else {
 			switch blocks[1] {
