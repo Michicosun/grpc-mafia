@@ -113,6 +113,7 @@ func (g *Game) Publish(mafia_name string) {
 				MafiaName: mafia_name,
 			},
 		},
+		Time: g.GetTime(),
 	})
 }
 
@@ -134,6 +135,13 @@ func (g *Game) Disconnect(player string) {
 	if len(g.need_events_from) == 0 {
 		g.actions.Signal()
 	}
+}
+
+func (g *Game) GetTime() mafia.Time {
+	if g.state == Day {
+		return mafia.Time_Day
+	}
+	return mafia.Time_Night
 }
 
 /////////////////////////////////////////////
@@ -178,6 +186,7 @@ func (g *Game) sendStartGame() {
 					Group:     g.getRoleGroup(player),
 				},
 			},
+			Time: g.GetTime(),
 		}
 	}
 }
@@ -190,6 +199,7 @@ func (g *Game) sendMsgToGroup(grp map[string]struct{}, msg string) {
 				Text: msg,
 			},
 		},
+		Time: g.GetTime(),
 	})
 }
 
@@ -204,6 +214,7 @@ func (g *Game) requestVotes(grp map[string]struct{}) {
 		Data: &mafia.Event_VoteRequest_{
 			VoteRequest: &mafia.Event_VoteRequest{},
 		},
+		Time: g.GetTime(),
 	})
 }
 
@@ -218,6 +229,7 @@ func (g *Game) sendCheckResult(to_check string) {
 				IsMafia: is_mafia,
 			},
 		},
+		Time: g.GetTime(),
 	})
 }
 
@@ -229,6 +241,7 @@ func (g *Game) sendDeathMessageToGroup(grp map[string]struct{}, killed string) {
 				Name: killed,
 			},
 		},
+		Time: g.GetTime(),
 	})
 }
 
@@ -245,6 +258,7 @@ func (g *Game) sendGameEndToGrp(grp map[string]struct{}, text string) {
 				Text: text,
 			},
 		},
+		Time: g.GetTime(),
 	})
 }
 

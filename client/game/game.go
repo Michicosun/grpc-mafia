@@ -23,6 +23,7 @@ type session struct {
 	Name      string
 
 	state        GameState
+	time         mafia.Time
 	Role         mafia.Role
 	AlivePlayers map[string]struct{}
 	Group        map[string]struct{}
@@ -40,6 +41,10 @@ func (s *session) ChangeState(new_state GameState, use_signal bool) {
 		s.Interactor.Signal()
 		RefreshLine(s.Interactor)
 	}
+}
+
+func (s *session) SetTime(received_time mafia.Time) {
+	s.time = received_time
 }
 
 func (s *session) GetState() GameState {

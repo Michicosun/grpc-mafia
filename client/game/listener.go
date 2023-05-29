@@ -24,6 +24,8 @@ func startListening(interactor IInteractor) error {
 			return err
 		}
 
+		Session.SetTime(event.Time)
+
 		switch event.GetType() {
 		case mafia.EventType_GameStart:
 			Session.HandleGameStart(event.GetGameStart())

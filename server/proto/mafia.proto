@@ -48,6 +48,11 @@ enum Role {
   Sheriff = 2;
 }
 
+enum Time {
+  Day = 0;
+  Night = 1;
+}
+
 message Event {
   message GameStart {
     string session_id = 1;
@@ -74,4 +79,5 @@ message Event {
     GameEnd game_end = 7;
   }
   EventType type = 8;
+  Time time = 9;
 }
