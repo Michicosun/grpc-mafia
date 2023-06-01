@@ -46,6 +46,16 @@ func (fs *FileStorage) Remove(filename string) error {
 	return os.Remove(full_path)
 }
 
+func (fs *FileStorage) RunStat(filename string) error {
+	full_path := filepath.Join(fs.folder, filename)
+	_, err := os.Stat(full_path)
+	return err
+}
+
+func (fs *FileStorage) Pwd(filename string) string {
+	return filepath.Join(fs.folder, filename)
+}
+
 func createIfNotExists(path string) error {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		if err := os.MkdirAll(path, os.ModePerm); err != nil {

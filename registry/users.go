@@ -1,9 +1,7 @@
 package registry
 
 import (
-	"fmt"
 	"grpc-mafia/registry/db"
-	"grpc-mafia/registry/pdfgen"
 	"mime/multipart"
 
 	"github.com/gin-gonic/gin"
@@ -94,19 +92,8 @@ func deleteUserHandler(c *gin.Context) {
 	c.JSON(200, user)
 }
 
-func getPdf(c *gin.Context) {
-	id := GenRandomName()
-
-	data := pdfgen.NewPDF()
-	Server.pdf_storage.Write(id, []byte(data))
-
-	c.File(fmt.Sprintf("/tmp/pdfs/%s", id))
-}
-
 func registerUsersRoutes(r *gin.Engine) {
 	r.POST("/users/:login", updateUserInfoHandler)
 	r.GET("/users/:login", getUserHandler)
 	r.DELETE("/users/:login", deleteUserHandler)
-
-	r.GET("/pdf", getPdf)
 }

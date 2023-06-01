@@ -2,30 +2,34 @@ package pdfgen
 
 import (
 	"bytes"
-	"text/template"
+	"grpc-mafia/util"
+	"html/template"
+	"path/filepath"
 
 	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
 )
 
-func NewPDF() []byte {
-	var templ *template.Template
-	var err error
+type PdfGen struct {
+	pdf_template     *template.Template
+	default_ava_path string
+}
 
-	// use Go's default HTML template generation tools to generate your HTML
-	if templ, err = template.ParseFiles("/home/mdartemenko/hse/soa/grpc-mafia/registry/pdfgen/template.html"); err != nil {
-		panic(err)
+func (g *PdfGen) Render(request RenderRequest) ([]byte, error) {
+	var body bytes.Buffer
+
+	if len(request.User.AvatarFilename) == 0 {
+		request.User.AvatarFilename = g.default_ava_path
 	}
 
 	// apply the parsed HTML template data and keep the result in a Buffer
-	var body bytes.Buffer
-	if err = templ.Execute(&body, nil); err != nil {
-		panic(err)
+	if err := g.pdf_template.Execute(&body, request); err != nil {
+		return nil, err
 	}
 
 	// Create new PDF generator
 	pdfg, err := wkhtmltopdf.NewPDFGenerator()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// read the HTML page as a PDF page
@@ -42,13 +46,39 @@ func NewPDF() []byte {
 	pdfg.MarginRight.Set(0)
 	pdfg.Dpi.Set(300)
 	pdfg.PageSize.Set(wkhtmltopdf.PageSizeA4)
-	// pdfg.Orientation.Set(wkhtmltopdf.OrientationLandscape)
 
 	// magic
 	err = pdfg.Create()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return pdfg.Bytes()
+	return pdfg.Bytes(), nil
+}
+
+func NewPDFGen() *PdfGen {
+	root, err := util.GetProjectRoot()
+	if err != nil {
+		panic(err) // can't work without template
+	}
+
+	ava_path, err := filepath.Abs(filepath.Join(root, "registry", "pdfgen", "default-avatar.png"))
+	if err != nil {
+		panic(err) // can't work without default ava
+	}
+
+	templ_path, err := filepath.Abs(filepath.Join(root, "registry", "pdfgen", "template.html"))
+	if err != nil {
+		panic(err) // can't work without template
+	}
+
+	pdf_template, err := template.ParseFiles(templ_path)
+	if err != nil {
+		panic(err) // can't work without template
+	}
+
+	return &PdfGen{
+		pdf_template:     pdf_template,
+		default_ava_path: ava_path,
+	}
 }

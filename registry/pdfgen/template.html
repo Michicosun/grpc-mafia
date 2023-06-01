@@ -15,7 +15,7 @@
         <tr>
             <td>
                 <div>
-                    <img src="/home/mdartemenko/hse/soa/grpc-mafia/cmd/registry/picture.jpg" , style="
+                    <img src="{{.User.AvatarFilename}}" , style="
                     width:350px;
                     height:auto;
                     border: solid 5px #000000">
@@ -24,16 +24,16 @@
             <td>
                 <table>
                     <tr>
-                        <td><b>Name</b></td>
-                        <td>Michicosun</td>
+                        <td><b>Login</b></td>
+                        <td>{{.User.Login}}</td>
                     </tr>
                     <tr>
                         <td><b>Gender</b></td>
-                        <td>Mail</td>
+                        <td>{{.User.Gender}}</td>
                     </tr>
                     <tr>
                         <td><b>Mail</b></td>
-                        <td>michicosun@ya.ru</td>
+                        <td>{{.User.Mail}}</td>
                     </tr>
                 </table>
             </td>
