@@ -3,6 +3,7 @@ package registry
 import (
 	"grpc-mafia/registry/db"
 	"mime/multipart"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -10,6 +11,7 @@ import (
 
 // POST /users/:login - create/update user
 // GET /users/:login - get user
+// GET /users/?logins=1,2,3
 // DELETE /users/:login - delete user
 
 type userInfo struct {
@@ -64,13 +66,42 @@ func getUserHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := Server.db.GetUserOrCreateDefault(info.Login)
+	user, err := Server.db.GetUser(info.Login)
 	if err != nil {
 		EndWithError(c, err)
 		return
 	}
 
 	c.JSON(200, user)
+}
+
+func getUsersListHandler(c *gin.Context) {
+	cgi_logins := c.Query("logins")
+
+	if len(cgi_logins) == 0 {
+		users, err := Server.db.GetAllUsers()
+		if err != nil {
+			EndWithError(c, err)
+		} else {
+			c.JSON(200, users)
+		}
+		return
+	}
+
+	logins := strings.Split(cgi_logins, ",")
+	users := make([]*db.User, 0)
+
+	for _, login := range logins {
+		user, err := Server.db.GetUser(login)
+		if err != nil {
+			EndWithError(c, err)
+			return
+		}
+
+		users = append(users, user)
+	}
+
+	c.JSON(200, users)
 }
 
 func deleteUserHandler(c *gin.Context) {
@@ -81,7 +112,7 @@ func deleteUserHandler(c *gin.Context) {
 		return
 	}
 
-	user, err := Server.db.GetUserOrCreateDefault(info.Login)
+	user, err := Server.db.GetUser(info.Login)
 	if err != nil {
 		EndWithError(c, err)
 		return
@@ -95,5 +126,6 @@ func deleteUserHandler(c *gin.Context) {
 func registerUsersRoutes(r *gin.Engine) {
 	r.POST("/users/:login", updateUserInfoHandler)
 	r.GET("/users/:login", getUserHandler)
+	r.GET("/users", getUsersListHandler)
 	r.DELETE("/users/:login", deleteUserHandler)
 }

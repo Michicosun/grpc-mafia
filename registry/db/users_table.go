@@ -1,15 +1,16 @@
 package db
 
-func (a *DBAdapter) PrefetchUser(login string) error {
+import "fmt"
+
+func (a *DBAdapter) prefetchUser(login string) error {
 	stmt := `INSERT OR IGNORE INTO Users (login) VALUES (?);`
 	_, err := a.db.Exec(stmt, login)
 	return err
 }
 
-func (a *DBAdapter) GetUserOrCreateDefault(login string) (*User, error) {
-	a.PrefetchUser(login)
-
+func (a *DBAdapter) GetUser(login string) (*User, error) {
 	stmt := `SELECT * FROM Users WHERE login == ?;`
+
 	rows, err := a.db.Query(stmt, login)
 	if err != nil {
 		return nil, err
@@ -22,11 +23,34 @@ func (a *DBAdapter) GetUserOrCreateDefault(login string) (*User, error) {
 		return &user, nil
 	}
 
-	panic("unreachable")
+	return nil, fmt.Errorf("user: %s not found", login)
+}
+
+func (a *DBAdapter) GetAllUsers() ([]User, error) {
+	stmt := `SELECT * FROM Users;`
+
+	rows, err := a.db.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := make([]User, 0)
+	for rows.Next() {
+		user := User{}
+		rows.Scan(&user.Login, &user.AvatarFilename, &user.Gender, &user.Mail)
+		users = append(users, user)
+	}
+
+	return users, nil
 }
 
 func (a *DBAdapter) UpdateUser(new User) (*User, error) {
-	cur, err := a.GetUserOrCreateDefault(new.Login)
+	if err := a.prefetchUser(new.Login); err != nil {
+		return nil, err
+	}
+
+	cur, err := a.GetUser(new.Login)
 	if err != nil {
 		return nil, err
 	}

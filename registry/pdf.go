@@ -11,7 +11,7 @@ import (
 func createPdf(c *gin.Context) {
 	login := c.Param("login")
 
-	user, err := Server.db.GetUserOrCreateDefault(login)
+	user, err := Server.db.GetUser(login)
 	if err != nil {
 		EndWithError(c, err)
 		return
