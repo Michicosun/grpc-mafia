@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 	"net"
 	"time"
@@ -31,7 +30,7 @@ func main() {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		zlog.Fatal().Err(err).Msg("failed to listen")
-		log.Fatalf(": %v", err)
+		return
 	}
 
 	srv := grpc.NewServer()
@@ -39,5 +38,7 @@ func main() {
 
 	zlog.Info().Str("port", port).Msg("started grpc server")
 
-	log.Fatalln(srv.Serve(lis))
+	if err := srv.Serve(lis); err != nil {
+		zlog.Error().Err(err).Msg("graceful stop failed")
+	}
 }

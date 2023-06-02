@@ -3,13 +3,14 @@ package registry
 import (
 	"encoding/json"
 	"fmt"
+	"grpc-mafia/logger"
 	"grpc-mafia/registry/db"
 	"grpc-mafia/registry/fs"
 	"grpc-mafia/registry/pdfgen"
 	"grpc-mafia/registry/queue"
-	"log"
 
 	"github.com/gin-gonic/gin"
+	zlog "github.com/rs/zerolog/log"
 )
 
 var Server = &server{}
@@ -35,14 +36,14 @@ func (s *server) WorkerRenderLoop() {
 		request := pdfgen.RenderRequest{}
 
 		if err := json.Unmarshal(raw_request.Body, &request); err != nil {
-			log.Fatal(err)
+			zlog.Error().Err(err).Msg("unmarshal request")
 			continue
 		}
 
 		pdf_data, err := s.gen.Render(request)
 
 		if err != nil {
-			log.Fatal(err)
+			zlog.Error().Err(err).Msg("while render")
 			continue
 		}
 
@@ -55,7 +56,8 @@ func (s *server) SubmitRenderRequest(request pdfgen.RenderRequest) {
 }
 
 func (s *server) Init(cfg ServerConfig) {
-	s.router = gin.Default()
+	s.router = gin.New()
+	s.router.Use(logger.GinLogger())
 
 	avas, err := fs.CreateFileStorage(fmt.Sprintf("%s/avatars", cfg.DataFolder))
 	if err != nil {

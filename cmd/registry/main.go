@@ -1,6 +1,7 @@
 package main
 
 import (
+	"grpc-mafia/logger"
 	"grpc-mafia/registry"
 	"grpc-mafia/registry/queue"
 	"grpc-mafia/util"
@@ -18,6 +19,8 @@ const (
 )
 
 func main() {
+	logger.Init()
+
 	data_folder := util.GetEnvWithDefault("DATA_FOLDER", DEFAULT_DATA_FOLDER)
 
 	renders_str := util.GetEnvWithDefault("RENDERS_CNT", DEFAULT_RENDERS_CNT)
