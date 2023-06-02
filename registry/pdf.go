@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	zlog "github.com/rs/zerolog/log"
 )
 
 func createPdf(c *gin.Context) {
@@ -14,14 +13,12 @@ func createPdf(c *gin.Context) {
 
 	user, err := Server.db.GetUser(login)
 	if err != nil {
-		zlog.Error().Err(err).Msg("get user")
 		EndWithError(c, err)
 		return
 	}
 
 	statistics, err := Server.db.GetStatistics(login)
 	if err != nil {
-		zlog.Error().Err(err).Msg("get statistics")
 		EndWithError(c, err)
 		return
 	}
@@ -45,7 +42,6 @@ func getPdf(c *gin.Context) {
 	filename := c.Param("filename")
 
 	if err := Server.pdf_storage.RunStat(filename); err != nil {
-		zlog.Error().Err(err).Msgf("file %s not found", filename)
 		EndWithError(c, err)
 		return
 	}

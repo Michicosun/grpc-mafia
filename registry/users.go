@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	zlog "github.com/rs/zerolog/log"
 )
 
 // POST /users/:login - create/update user
@@ -26,13 +25,11 @@ func updateUserInfoHandler(c *gin.Context) {
 	info := userInfo{}
 
 	if err := c.BindUri(&info); err != nil {
-		zlog.Error().Err(err).Msg("bind")
 		EndWithError(c, err)
 		return
 	}
 
 	if err := c.MustBindWith(&info, binding.FormMultipart); err != nil {
-		zlog.Error().Err(err).Msg("bind")
 		EndWithError(c, err)
 		return
 	}
@@ -47,7 +44,6 @@ func updateUserInfoHandler(c *gin.Context) {
 		user.AvatarFilename = GenRandomName()
 
 		if err := SaveAvatar(info.Avatar, user.AvatarFilename); err != nil {
-			zlog.Error().Err(err).Msg("save avatar")
 			EndWithError(c, err)
 			return
 		}
@@ -55,7 +51,6 @@ func updateUserInfoHandler(c *gin.Context) {
 
 	new, err := Server.db.UpdateUser(user)
 	if err != nil {
-		zlog.Error().Err(err).Msg("update user")
 		EndWithError(c, err)
 		return
 	}
@@ -67,14 +62,12 @@ func getUserHandler(c *gin.Context) {
 	info := userInfo{}
 
 	if err := c.BindUri(&info); err != nil {
-		zlog.Error().Err(err).Msg("bind")
 		EndWithError(c, err)
 		return
 	}
 
 	user, err := Server.db.GetUser(info.Login)
 	if err != nil {
-		zlog.Error().Err(err).Msg("get user")
 		EndWithError(c, err)
 		return
 	}
@@ -88,7 +81,6 @@ func getUsersListHandler(c *gin.Context) {
 	if len(cgi_logins) == 0 {
 		users, err := Server.db.GetAllUsers()
 		if err != nil {
-			zlog.Error().Err(err).Msg("get all users")
 			EndWithError(c, err)
 		} else {
 			c.JSON(200, users)
@@ -102,7 +94,6 @@ func getUsersListHandler(c *gin.Context) {
 	for _, login := range logins {
 		user, err := Server.db.GetUser(login)
 		if err != nil {
-			zlog.Error().Err(err).Msg("get user")
 			EndWithError(c, err)
 			return
 		}
@@ -117,14 +108,12 @@ func deleteUserHandler(c *gin.Context) {
 	info := userInfo{}
 
 	if err := c.BindUri(&info); err != nil {
-		zlog.Error().Err(err).Msg("bind")
 		EndWithError(c, err)
 		return
 	}
 
 	user, err := Server.db.GetUser(info.Login)
 	if err != nil {
-		zlog.Error().Err(err).Msg("get user")
 		EndWithError(c, err)
 		return
 	}

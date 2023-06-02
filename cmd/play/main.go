@@ -10,10 +10,24 @@ import (
 )
 
 func main() {
-	report := registry.UserRoundReport{
-		Login:     "a",
-		Win:       0,
-		RoundTime: 10 * time.Second,
+	report := registry.RoundReport{
+		UserReports: []registry.UserRoundReport{
+			{
+				Login:     "a",
+				Win:       0,
+				RoundTime: 10 * time.Second,
+			},
+			{
+				Login:     "michicosun",
+				Win:       1,
+				RoundTime: 10000 * time.Second,
+			},
+			{
+				Login:     "b",
+				Win:       1,
+				RoundTime: 90 * time.Second,
+			},
+		},
 	}
 
 	content, _ := json.Marshal(report)

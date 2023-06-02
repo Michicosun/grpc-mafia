@@ -20,19 +20,25 @@ type UserRoundReport struct {
 	RoundTime time.Duration `json:"round_time"`
 }
 
-func endRoundHandler(c *gin.Context) {
-	report := UserRoundReport{}
+type RoundReport struct {
+	UserReports []UserRoundReport `json:"user_reports"`
+}
 
-	if err := c.BindJSON(&report); err != nil {
-		zlog.Error().Err(err).Msg("bind")
+func endRoundHandler(c *gin.Context) {
+	round_report := RoundReport{}
+
+	if err := c.BindJSON(&round_report); err != nil {
 		EndWithError(c, err)
 		return
 	}
 
-	if err := Server.db.AddNewRound(report.Login, report.Win, report.RoundTime); err != nil {
-		zlog.Error().Err(err).Msg("insert into database failed")
-		EndWithError(c, err)
-		return
+	zlog.Info().Interface("round_report", round_report).Msg("parsed reports")
+
+	for _, report := range round_report.UserReports {
+		if err := Server.db.AddNewRound(report.Login, report.Win, report.RoundTime); err != nil {
+			EndWithError(c, err)
+			return
+		}
 	}
 
 	c.JSON(200, "submitted")
@@ -43,7 +49,6 @@ func getStatisticsForUser(c *gin.Context) {
 
 	stat, err := Server.db.GetStatistics(login)
 	if err != nil {
-		zlog.Error().Err(err).Msg("get statistics")
 		EndWithError(c, err)
 		return
 	}
