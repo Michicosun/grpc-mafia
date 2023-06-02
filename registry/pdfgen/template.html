@@ -24,15 +24,27 @@
             <td>
                 <table>
                     <tr>
-                        <td><b>Login</b></td>
+                        <td>
+                            <b>
+                                <p style="font-size:20px;">Login</p>
+                            </b>
+                        </td>
                         <td>{{.User.Login}}</td>
                     </tr>
                     <tr>
-                        <td><b>Gender</b></td>
+                        <td>
+                            <b>
+                                <p style="font-size:20px;">Gender</p>
+                            </b>
+                        </td>
                         <td>{{.User.Gender}}</td>
                     </tr>
                     <tr>
-                        <td><b>Mail</b></td>
+                        <td>
+                            <b>
+                                <p style="font-size:20px;">Mail</p>
+                            </b>
+                        </td>
                         <td>{{.User.Mail}}</td>
                     </tr>
                 </table>
@@ -41,6 +53,41 @@
     </table>
 
     <h1>Game Statistics</h1>
+
+    <table cellpadding="10">
+        <tr>
+            <td>
+                <b>
+                    <p style="font-size:20px;">Sessions</p>
+                </b>
+            </td>
+            <td> {{.Statistics.SessionsCnt}}</td>
+        </tr>
+        <tr>
+            <td>
+                <b>
+                    <p style="font-size:20px;">Wins</p>
+                </b>
+            </td>
+            <td> {{.Statistics.WinCnt}}</td>
+        </tr>
+        <tr>
+            <td>
+                <b>
+                    <p style="font-size:20px;">Loses</p>
+                </b>
+            </td>
+            <td> {{.Statistics.LoseCnt}}</td>
+        </tr>
+        <tr>
+            <td>
+                <b>
+                    <p style="font-size:20px;">TotalTime</p>
+                </b>
+            </td>
+            <td> {{.Statistics.TotalTime}}</td>
+        </tr>
+    </table>
 
 </body>
 
