@@ -37,6 +37,7 @@ func (hi *humanInteractor) Completer(in prompt.Document) []prompt.Suggest {
 }
 
 func (hi *humanInteractor) exitChecker(in string, breakline bool) bool {
+	in = strings.TrimSpace(in)
 	if in == "exit" && breakline {
 		fmt.Print("\r")
 		return true
