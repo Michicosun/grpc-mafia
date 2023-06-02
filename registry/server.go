@@ -82,7 +82,7 @@ func (s *server) Init(cfg ServerConfig) {
 
 	registerAuxiliaryRoutes(s.router)
 	registerUsersRoutes(s.router)
-	// register statistics routes
+	registerStatisticsRoutes(s.router)
 	registerPdfRoutes(s.router)
 }
 
