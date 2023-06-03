@@ -27,10 +27,6 @@ func (a *DBAdapter) PrefetchStatistics(login string) error {
 }
 
 func (a *DBAdapter) AddNewRound(login string, win uint8, round_time time.Duration) error {
-	if err := a.PrefetchStatistics(login); err != nil {
-		return err
-	}
-
 	stmt := `
 	UPDATE Statistics
 	SET sessions_cnt = sessions_cnt + ?,
