@@ -38,17 +38,21 @@ func (rc *registryClient) SendRoundReport(g *Game) {
 		UserReports: make([]registry.UserRoundReport, 0),
 	}
 
+	win_mafia := uint8(0)
 	if g.state == WinMafia {
-		for m := range g.mafia {
-			report.UserReports = append(report.UserReports, rc.MakeUserReport(m, 1, round_duration))
-		}
-	} else {
-		for m := range g.sheriffs {
-			report.UserReports = append(report.UserReports, rc.MakeUserReport(m, 1, round_duration))
-		}
-		for m := range g.alive_players {
-			report.UserReports = append(report.UserReports, rc.MakeUserReport(m, 1, round_duration))
-		}
+		win_mafia = 1
+	}
+
+	for m := range g.mafia {
+		report.UserReports = append(report.UserReports, rc.MakeUserReport(m, win_mafia, round_duration))
+	}
+
+	for m := range g.sheriffs {
+		report.UserReports = append(report.UserReports, rc.MakeUserReport(m, 1-win_mafia, round_duration))
+	}
+
+	for m := range g.alive_players {
+		report.UserReports = append(report.UserReports, rc.MakeUserReport(m, 1-win_mafia, round_duration))
 	}
 
 	for m := range g.ghosts {
