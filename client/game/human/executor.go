@@ -31,13 +31,14 @@ func (hi *humanInteractor) Executor(in string) {
 			fmt.Println("need to provide which group is this message for and message text")
 			return
 		} else {
+			msg := strings.Join(blocks[2:], " ")
 			switch blocks[1] {
 			case "all":
 				if !AllowMessage(mafia.Role_Civilian) {
 					fmt.Println("sending messages is not allowed")
 					return
 				} else {
-					if err := chat.RabbitConnection.SendMessage(game.Session.Name, blocks[2], int32(mafia.Role_Civilian)); err != nil {
+					if err := chat.RabbitConnection.SendMessage(game.Session.Name, msg, int32(mafia.Role_Civilian)); err != nil {
 						game.Session.StopWithError(err)
 					}
 				}
@@ -46,7 +47,7 @@ func (hi *humanInteractor) Executor(in string) {
 					fmt.Println("sending messages is not allowed")
 					return
 				} else {
-					if err := chat.RabbitConnection.SendMessage(game.Session.Name, blocks[2], int32(game.Session.Role)); err != nil {
+					if err := chat.RabbitConnection.SendMessage(game.Session.Name, msg, int32(game.Session.Role)); err != nil {
 						game.Session.StopWithError(err)
 					}
 				}
