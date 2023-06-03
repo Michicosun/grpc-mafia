@@ -29,16 +29,24 @@ services:
     environment: *common-variables
     ports:
       - 9000:9000/tcp
+    depends_on:
+      - mafia-registry
     restart: on-failure
 
   bot-1:
     image: michicosun/mafia-bot
     environment: *common-variables
+    depends_on:
+      - mafia-server
 
   bot-2:
     image: michicosun/mafia-bot
     environment: *common-variables
+    depends_on:
+      - mafia-server
 
   bot-3:
     image: michicosun/mafia-bot
     environment: *common-variables
+    depends_on:
+      - mafia-server
