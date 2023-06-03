@@ -2,8 +2,9 @@ version: "3.4"
 
 x-common-variables:
   &common-variables
-  SRV_HOST: mafia-server
   RABBIT_HOST: rabbitmq
+  REGISTRY_HOST: mafia-registry
+  SRV_HOST: mafia-server
   PLAYERS_CNT: 4
   USE_BOT: use
 
@@ -13,17 +14,31 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  mafia-registry:
+    image: michicosun/mafia-registry
+    environment: *common-variables
+    ports:
+      - 8080:8080/tcp
+    depends_on:
+      - rabbitmq
+    restart: on-failure
+
   mafia-server:
     image: michicosun/mafia-server
     environment: *common-variables
     ports:
       - 9000:9000/tcp
+    restart: on-failure
+
   bot-1:
     image: michicosun/mafia-bot
     environment: *common-variables
+
   bot-2:
     image: michicosun/mafia-bot
     environment: *common-variables
+
   bot-3:
     image: michicosun/mafia-bot
     environment: *common-variables
