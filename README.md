@@ -54,7 +54,7 @@ Docker образы можно собрать по следующей схеме
 - POST `/users/:login` - создает или обновляет информацию по пользователю, аргументы передаются, используя `multipart/form-data`
 формат, пример:
   ```bash
-    curl -X POST localhost:8080/users/michicosun -F mail=michicosun@ya.ru -F avatar=@picture.jpg
+    curl -X POST localhost:8080/users/michicosun -F mail=mr-robot@protonmail.ch -F avatar=@picture.jpg
   ```
 
 - GET `/users/:login` - получить информацию по логину пользователя
