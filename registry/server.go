@@ -33,12 +33,16 @@ type server struct {
 
 func (s *server) WorkerRenderLoop() {
 	for raw_request := range s.task_queue.GetTaskChan() {
+		zlog.Info().Str("raw_request", string(raw_request.Body)).Msg("get render request")
+
 		request := pdfgen.RenderRequest{}
 
 		if err := json.Unmarshal(raw_request.Body, &request); err != nil {
 			zlog.Error().Err(err).Msg("unmarshal request")
 			continue
 		}
+
+		zlog.Info().Interface("request", request).Msg("unmarshal request")
 
 		pdf_data, err := s.gen.Render(request)
 

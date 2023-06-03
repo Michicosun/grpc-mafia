@@ -7,6 +7,7 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
+	zlog "github.com/rs/zerolog/log"
 )
 
 type RabbitCredentials struct {
@@ -68,6 +69,8 @@ func (tq *TaskQueue) SubmitTask(task interface{}) error {
 }
 
 func NewTaskQueue(creds RabbitCredentials) *TaskQueue {
+	zlog.Info().Interface("using creds", creds).Msg("configuring connection to rabbitmq")
+
 	tq := TaskQueue{}
 
 	conn, err := amqp.Dial(createConnectionString(&creds))

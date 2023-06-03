@@ -56,6 +56,11 @@ func updateUserInfoHandler(c *gin.Context) {
 		return
 	}
 
+	if err := Server.db.PrefetchStatistics(user.Login); err != nil {
+		EndWithError(c, err)
+		return
+	}
+
 	c.JSON(http.StatusOK, new)
 }
 

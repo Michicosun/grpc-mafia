@@ -6,7 +6,8 @@ import (
 	"html/template"
 	"path/filepath"
 
-	"github.com/SebastiaanKlippert/go-wkhtmltopdf"
+	wkhtmltopdf "github.com/SebastiaanKlippert/go-wkhtmltopdf"
+	zlog "github.com/rs/zerolog/log"
 )
 
 type PdfGen struct {
@@ -21,10 +22,14 @@ func (g *PdfGen) Render(request RenderRequest) ([]byte, error) {
 		request.User.AvatarFilename = g.default_ava_path
 	}
 
+	zlog.Info().Msg("executing pdf template")
+
 	// apply the parsed HTML template data and keep the result in a Buffer
 	if err := g.pdf_template.Execute(&body, request); err != nil {
 		return nil, err
 	}
+
+	zlog.Info().Msg("New pdf generator")
 
 	// Create new PDF generator
 	pdfg, err := wkhtmltopdf.NewPDFGenerator()
@@ -32,8 +37,12 @@ func (g *PdfGen) Render(request RenderRequest) ([]byte, error) {
 		return nil, err
 	}
 
+	zlog.Info().Msg("New page reader")
+
 	// read the HTML page as a PDF page
 	page := wkhtmltopdf.NewPageReader(bytes.NewReader(body.Bytes()))
+
+	zlog.Info().Msg("configuring")
 
 	// enable this if the HTML file contains local references such as images, CSS, etc.
 	page.EnableLocalFileAccess.Set(true)
@@ -47,11 +56,15 @@ func (g *PdfGen) Render(request RenderRequest) ([]byte, error) {
 	pdfg.Dpi.Set(300)
 	pdfg.PageSize.Set(wkhtmltopdf.PageSizeA4)
 
+	zlog.Info().Msg("creating pdf")
+
 	// magic
 	err = pdfg.Create()
 	if err != nil {
 		return nil, err
 	}
+
+	zlog.Info().Msg("pdf created")
 
 	return pdfg.Bytes(), nil
 }

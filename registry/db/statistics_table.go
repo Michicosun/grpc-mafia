@@ -12,7 +12,7 @@ type GameStatistics struct {
 	TotalTime   string `json:"total_time"`
 }
 
-func (a *DBAdapter) prefetchStatistics(login string) error {
+func (a *DBAdapter) PrefetchStatistics(login string) error {
 	stmt := `
 	INSERT OR IGNORE INTO Statistics (
 		login,
@@ -27,7 +27,7 @@ func (a *DBAdapter) prefetchStatistics(login string) error {
 }
 
 func (a *DBAdapter) AddNewRound(login string, win uint8, round_time time.Duration) error {
-	if err := a.prefetchStatistics(login); err != nil {
+	if err := a.PrefetchStatistics(login); err != nil {
 		return err
 	}
 
