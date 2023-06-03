@@ -25,6 +25,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	logger.Init()
+	server.RegistryClient.Init()
 
 	port := util.GetEnvWithDefault("PORT", DEFAULT_GRPC_PORT)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))

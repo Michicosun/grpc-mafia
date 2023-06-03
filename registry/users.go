@@ -3,6 +3,7 @@ package registry
 import (
 	"grpc-mafia/registry/db"
 	"mime/multipart"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -55,7 +56,7 @@ func updateUserInfoHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, new)
+	c.JSON(http.StatusOK, new)
 }
 
 func getUserHandler(c *gin.Context) {
@@ -72,7 +73,7 @@ func getUserHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, user)
+	c.JSON(http.StatusOK, user)
 }
 
 func getUsersListHandler(c *gin.Context) {
@@ -83,7 +84,7 @@ func getUsersListHandler(c *gin.Context) {
 		if err != nil {
 			EndWithError(c, err)
 		} else {
-			c.JSON(200, users)
+			c.JSON(http.StatusOK, users)
 		}
 		return
 	}
@@ -101,7 +102,7 @@ func getUsersListHandler(c *gin.Context) {
 		users = append(users, user)
 	}
 
-	c.JSON(200, users)
+	c.JSON(http.StatusOK, users)
 }
 
 func deleteUserHandler(c *gin.Context) {
@@ -120,7 +121,7 @@ func deleteUserHandler(c *gin.Context) {
 
 	Server.db.DeleteUser(info.Login)
 
-	c.JSON(200, user)
+	c.JSON(http.StatusOK, user)
 }
 
 func registerUsersRoutes(r *gin.Engine) {

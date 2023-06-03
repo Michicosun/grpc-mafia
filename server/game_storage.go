@@ -1,11 +1,12 @@
 package server
 
 import (
-	"fmt"
 	mafia "grpc-mafia/server/proto"
 	"grpc-mafia/util"
 	"strconv"
 	"sync"
+
+	zlog "github.com/rs/zerolog/log"
 )
 
 type GameStorage struct {
@@ -37,7 +38,7 @@ func MakeGameStorage() *GameStorage {
 		players_cnt = 4
 	}
 
-	fmt.Printf("configured games of %d players\n", players_cnt)
+	zlog.Info().Int("players count", players_cnt).Msg("game engine configured")
 
 	return &GameStorage{
 		players_cnt: uint32(players_cnt),

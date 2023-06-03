@@ -23,7 +23,7 @@ func main() {
 				RoundTime: 10000 * time.Second,
 			},
 			{
-				Login:     "b",
+				Login:     "fff",
 				Win:       1,
 				RoundTime: 90 * time.Second,
 			},

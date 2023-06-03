@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -34,14 +35,19 @@ func endRoundHandler(c *gin.Context) {
 
 	zlog.Info().Interface("round_report", round_report).Msg("parsed reports")
 
+	errors := make([]error, 0)
+
 	for _, report := range round_report.UserReports {
 		if err := Server.db.AddNewRound(report.Login, report.Win, report.RoundTime); err != nil {
-			EndWithError(c, err)
-			return
+			errors = append(errors, err)
 		}
 	}
 
-	c.JSON(200, "submitted")
+	if len(errors) != 0 {
+		c.JSON(http.StatusNotFound, gin.H{"errors": errors})
+	}
+
+	c.JSON(http.StatusOK, "submitted")
 }
 
 func getStatisticsForUser(c *gin.Context) {
@@ -53,7 +59,7 @@ func getStatisticsForUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, stat)
+	c.JSON(http.StatusOK, stat)
 }
 
 func registerStatisticsRoutes(r *gin.Engine) {

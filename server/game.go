@@ -5,6 +5,7 @@ import (
 	mafia "grpc-mafia/server/proto"
 	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -38,6 +39,8 @@ type Game struct {
 	need_events_from map[string]struct{}
 	kill_votes       []string
 	check_votes      []string
+
+	game_start_timestamp time.Time
 
 	mtx     sync.Mutex
 	actions sync.Cond
@@ -329,6 +332,8 @@ func (g *Game) Start() {
 	g.assignRoles()
 	g.sendStartGame()
 
+	g.game_start_timestamp = time.Now() // for statistics
+
 	// prepare phase
 	g.waitEventsFrom(g.alive_players)
 
@@ -482,6 +487,7 @@ func (g *Game) end() {
 	} else {
 		g.sendGameEndToAll("game ended, sheriffs win")
 	}
+	RegistryClient.SendRoundReport(g)
 }
 
 func NewGame(player_cnt uint32) *Game {

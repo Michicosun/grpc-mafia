@@ -1,13 +1,17 @@
 package registry
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 type PingResponse struct {
 	Text string `json:"text"`
 }
 
 func ping(c *gin.Context) {
-	c.JSON(200, PingResponse{
+	c.JSON(http.StatusOK, PingResponse{
 		Text: "pong",
 	})
 }
