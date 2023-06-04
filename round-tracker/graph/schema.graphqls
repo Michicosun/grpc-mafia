@@ -1,0 +1,36 @@
+type Player {
+  login: String!
+  role: String!
+  alive: Boolean!
+}
+
+type Round {
+  id: ID!
+  started_at: Int!
+  players: [Player!]!
+}
+
+input RoundInfo {
+  id: ID!
+  started_at: Int!
+}
+
+input PlayerInfo {
+  login: String!
+  role: String!
+}
+
+input PlayerStatus {
+  login: String!
+  alive: Boolean!
+}
+
+type Mutation {
+  createRound(round_info: RoundInfo!, player_infos: [PlayerInfo!]!): Round!
+  updatePlayers(id: ID!, player_statuses: [PlayerStatus!]!): Round!
+}
+
+type Query {
+  RoundInfo(id: ID): Round!
+  Rounds(n: Int = 1): [Round!]!
+}
