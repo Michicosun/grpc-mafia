@@ -32,6 +32,7 @@ type Game struct {
 	session_id    string
 	alive_players map[string]struct{}
 	ghosts        map[string]struct{}
+	civilians     map[string]struct{}
 	mafia         map[string]struct{}
 	sheriffs      map[string]struct{}
 
@@ -287,7 +288,7 @@ func (g *Game) waitEventsFrom(grp map[string]struct{}) {
 func (g *Game) assignRoles() {
 	max_group_cnt := (g.players_cnt - 1) / 2
 
-	civilians := make([]string, 0)
+	civilians_arr := make([]string, 0)
 
 	for player := range g.alive_players {
 		role := randRole()
@@ -307,21 +308,27 @@ func (g *Game) assignRoles() {
 		}
 
 		if role == mafia.Role_Civilian {
-			civilians = append(civilians, player)
+			civilians_arr = append(civilians_arr, player)
 		}
 	}
 
 	if len(g.mafia) == 0 {
-		player := civilians[0]
-		civilians = civilians[1:]
+		player := civilians_arr[0]
+		civilians_arr = civilians_arr[1:]
 		g.mafia[player] = struct{}{}
 		g.playersRole[player] = mafia.Role_Mafia
 	}
 
 	if len(g.sheriffs) == 0 {
-		player := civilians[0]
+		player := civilians_arr[0]
+		civilians_arr = civilians_arr[1:]
 		g.sheriffs[player] = struct{}{}
 		g.playersRole[player] = mafia.Role_Sheriff
+	}
+
+	for _, player := range civilians_arr {
+		g.civilians[player] = struct{}{}
+		g.playersRole[player] = mafia.Role_Civilian
 	}
 }
 
@@ -438,6 +445,11 @@ func (g *Game) night() {
 	g.changeState()
 }
 
+func (g *Game) isCivilian(player string) bool {
+	_, ok := g.civilians[player]
+	return ok
+}
+
 func (g *Game) isMafia(player string) bool {
 	_, ok := g.mafia[player]
 	return ok
@@ -458,6 +470,10 @@ func (g *Game) kill(player string) {
 
 	if g.isSheriff(player) {
 		delete(g.sheriffs, player)
+	}
+
+	if g.isCivilian(player) {
+		delete(g.civilians, player)
 	}
 
 	g.sendDeathMessageToAll(player)

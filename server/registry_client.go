@@ -51,7 +51,7 @@ func (rc *registryClient) SendRoundReport(g *Game) {
 		report.UserReports = append(report.UserReports, rc.MakeUserReport(m, 1-win_mafia, round_duration))
 	}
 
-	for m := range g.alive_players {
+	for m := range g.civilians {
 		report.UserReports = append(report.UserReports, rc.MakeUserReport(m, 1-win_mafia, round_duration))
 	}
 
