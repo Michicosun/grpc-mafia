@@ -9,6 +9,10 @@ func AllowLogin() bool {
 	return game.Session.GetState() == game.Undefined
 }
 
+func AllowTrackerQuery() bool {
+	return game.Session.GetState() == game.Undefined
+}
+
 func AllowConnect() bool {
 	return game.Session.GetState() == game.Undefined
 }

@@ -1,0 +1,50 @@
+type Player {
+  login: String!
+  role: String!
+  alive: Boolean!
+}
+
+type Comment {
+  from: String!
+  text: String!
+}
+
+enum RoundState {
+  RUNNING
+  WIN_MAFIA
+  WIN_SHERIFFS
+}
+
+type Round {
+  id: ID!
+  state: RoundState!
+  started_at: String!
+  players: [Player!]!
+  comments: [Comment!]!
+}
+
+input RoundInfo {
+  id: ID!
+  state: RoundState!
+  started_at: String!
+}
+
+input PlayerInfo {
+  login: String!
+  role: String!
+}
+
+input PlayerStatus {
+  login: String!
+  alive: Boolean!
+}
+
+type Mutation {
+  AddComment(round_id: ID!, from: String!, text: String!): Round!
+}
+
+type Query {
+  GetRoundInfo(id: ID): Round!
+  ListRounds(n: Int, state: RoundState!): [Round!]!
+}
+

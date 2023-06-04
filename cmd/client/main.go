@@ -6,6 +6,7 @@ import (
 	chat "grpc-mafia/client/chat"
 	game "grpc-mafia/client/game"
 	grpc "grpc-mafia/client/grpc"
+	"grpc-mafia/client/tracker_client"
 	util "grpc-mafia/util"
 	"math/rand"
 	"os"
@@ -43,6 +44,7 @@ func main() {
 	}
 
 	game.Session.Init()
+	tracker_client.TrackerClient.Init()
 
 	_, use_bot := os.LookupEnv("USE_BOT")
 	client := client.MakeClient(use_bot)

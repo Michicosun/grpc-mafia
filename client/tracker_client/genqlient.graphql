@@ -1,0 +1,43 @@
+mutation AddComment($round_id: ID!, $from: String!, $text: String!) {
+  AddComment(round_id: $round_id, from: $from, text: $text) {
+    id
+    comments {
+      from
+      text
+    }
+  }
+}
+
+query GetRoundInfo($id: ID) {
+  GetRoundInfo(id: $id) {
+    id
+    state
+    started_at
+    players {
+      login
+      role
+      alive
+    }
+    comments {
+      from
+      text
+    }
+  }
+}
+
+query ListRounds($n: Int, $state: RoundState!) {
+  ListRounds(n: $n, state: $state) {
+    id
+    state
+    started_at
+    players {
+      login
+      role
+      alive
+    }
+    comments {
+      from
+      text
+    }
+  }
+}

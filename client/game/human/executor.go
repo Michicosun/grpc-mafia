@@ -1,13 +1,26 @@
 package game
 
 import (
+	"encoding/json"
 	"fmt"
 	chat "grpc-mafia/client/chat"
 	"grpc-mafia/client/game"
 	"grpc-mafia/client/grpc"
+	"grpc-mafia/client/tracker_client"
 	mafia "grpc-mafia/server/proto"
+	"strconv"
 	"strings"
 )
+
+func PrettyPrintJson(obj any) {
+	jsonData, err := json.MarshalIndent(obj, "", "  ")
+	if err != nil {
+		fmt.Println("Error generating JSON:", err)
+		return
+	}
+
+	fmt.Println(string(jsonData))
+}
 
 func (hi *humanInteractor) Executor(in string) {
 	in = strings.TrimSpace(in)
@@ -25,6 +38,65 @@ func (hi *humanInteractor) Executor(in string) {
 			return
 		} else {
 			hi.SetLogin(blocks[1])
+		}
+	case "add-comment":
+		if !AllowTrackerQuery() {
+			fmt.Println("tracker query is not allowe right now")
+			return
+		} else if len(blocks) < 3 {
+			fmt.Println("you need to provide round_id and comment text")
+			return
+		} else if len(hi.login) == 0 {
+			fmt.Println("login not specified")
+			return
+		} else {
+			text := strings.Join(blocks[2:], " ")
+
+			resp, err := tracker_client.TrackerClient.AddComment(blocks[1], hi.login, text)
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			PrettyPrintJson(resp.GetAddComment())
+		}
+	case "get-round-info":
+		if !AllowTrackerQuery() {
+			fmt.Println("tracker query is not allowe right now")
+			return
+		} else if len(blocks) != 2 {
+			fmt.Println("you need to provide round_id")
+			return
+		} else {
+			resp, err := tracker_client.TrackerClient.GetRoundInfo(blocks[1])
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			PrettyPrintJson(resp.GetGetRoundInfo())
+		}
+	case "list-rounds":
+		if !AllowTrackerQuery() {
+			fmt.Println("tracker query is not allowe right now")
+			return
+		} else if len(blocks) != 3 {
+			fmt.Println("you need to provide n: count of rounds and comment state: RUNNING/WIN_MAFIA/WIN_SHERIFFS")
+			return
+		} else {
+			n, err := strconv.Atoi(blocks[1])
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			resp, err := tracker_client.TrackerClient.ListRounds(n, blocks[2])
+			if err != nil {
+				fmt.Println(err.Error())
+				return
+			}
+
+			PrettyPrintJson(resp.GetListRounds())
 		}
 	case "connect":
 		if !AllowConnect() {
