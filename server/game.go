@@ -513,6 +513,7 @@ func NewGame(player_cnt uint32) *Game {
 		playersRole: make(map[string]mafia.Role),
 
 		alive_players: make(map[string]struct{}),
+		civilians:     make(map[string]struct{}),
 		ghosts:        make(map[string]struct{}),
 		mafia:         make(map[string]struct{}),
 		sheriffs:      make(map[string]struct{}),
