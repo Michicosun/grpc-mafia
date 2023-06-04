@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	zlog "github.com/rs/zerolog/log"
 )
 
 type Player struct {
@@ -296,18 +297,10 @@ func (g *Game) assignRoles() {
 		if role == mafia.Role_Mafia && len(g.mafia) < int(max_group_cnt) {
 			g.mafia[player] = struct{}{}
 			g.playersRole[player] = mafia.Role_Mafia
-		} else {
-			role = mafia.Role_Sheriff
-		}
-
-		if role == mafia.Role_Sheriff && len(g.sheriffs) < int(max_group_cnt) {
+		} else if role == mafia.Role_Sheriff && len(g.sheriffs) < int(max_group_cnt) {
 			g.sheriffs[player] = struct{}{}
 			g.playersRole[player] = mafia.Role_Sheriff
 		} else {
-			role = mafia.Role_Civilian
-		}
-
-		if role == mafia.Role_Civilian {
 			civilians_arr = append(civilians_arr, player)
 		}
 	}
@@ -329,6 +322,18 @@ func (g *Game) assignRoles() {
 	for _, player := range civilians_arr {
 		g.civilians[player] = struct{}{}
 		g.playersRole[player] = mafia.Role_Civilian
+	}
+
+	for player := range g.civilians {
+		zlog.Info().Str("player", player).Str("role", mafia.Role_Civilian.String()).Msg("role assigned")
+	}
+
+	for player := range g.mafia {
+		zlog.Info().Str("player", player).Str("role", mafia.Role_Mafia.String()).Msg("role assigned")
+	}
+
+	for player := range g.sheriffs {
+		zlog.Info().Str("player", player).Str("role", mafia.Role_Sheriff.String()).Msg("role assigned")
 	}
 }
 
