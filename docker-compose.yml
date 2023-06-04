@@ -4,6 +4,7 @@ x-common-variables:
   &common-variables
   RABBIT_HOST: rabbitmq
   REGISTRY_HOST: mafia-registry
+  TRACKER_HOST: mafia-tracker
   SRV_HOST: mafia-server
   PLAYERS_CNT: 4
   USE_BOT: use
@@ -23,6 +24,13 @@ services:
       - 8080:8080/tcp
     depends_on:
       - rabbitmq
+    restart: on-failure
+
+  mafia-tracker:
+    image: michicosun/mafia-tracker
+    environment: *common-variables
+    ports:
+      - 9090:9090/tcp
     restart: on-failure
 
   mafia-server:

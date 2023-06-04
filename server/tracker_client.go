@@ -74,7 +74,7 @@ func (tc *trackerClient) UpdatePlayersInfo(g *Game) {
 
 func (tc *trackerClient) Init() {
 	host := util.GetEnvWithDefault("TRACKER_HOST", "localhost")
-	port := util.GetEnvWithDefault("TRACKER_PORT", "8080")
+	port := util.GetEnvWithDefault("TRACKER_PORT", "9090")
 
 	endpoint := fmt.Sprintf("http://%s:%s/graphql", host, port)
 

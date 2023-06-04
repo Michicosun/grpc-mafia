@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	DEFAULT_TRACKER_PORT = "8080"
+	DEFAULT_TRACKER_PORT = "9090"
 	DEFAULT_DATA_FOLDER  = "/tmp/grpc-mafia"
 )
 
