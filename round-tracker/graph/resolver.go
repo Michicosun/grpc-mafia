@@ -1,15 +1,20 @@
 package graph
 
-import "grpc-mafia/round-tracker/graph/model"
+import (
+	"grpc-mafia/round-tracker/db"
+)
 
 //go:generate go run github.com/99designs/gqlgen
 
 type Resolver struct {
-	rounds map[string]*model.Round
+	db *db.DBAdapter
 }
 
-func NewResolver() *Resolver {
+func NewResolver(file string) *Resolver {
+	db := db.NewDBAdapter(file)
+	db.InitTables()
+
 	return &Resolver{
-		rounds: make(map[string]*model.Round),
+		db: db,
 	}
 }

@@ -4,15 +4,28 @@ type Player {
   alive: Boolean!
 }
 
+type Comment {
+  from: String!
+  text: String!
+}
+
+enum RoundState {
+  RUNNING
+  FINISHED
+}
+
 type Round {
   id: ID!
-  started_at: Int!
+  state: RoundState!
+  started_at: String!
   players: [Player!]!
+  comments: [Comment!]!
 }
 
 input RoundInfo {
   id: ID!
-  started_at: Int!
+  state: RoundState!
+  started_at: String!
 }
 
 input PlayerInfo {
@@ -26,11 +39,12 @@ input PlayerStatus {
 }
 
 type Mutation {
-  createRound(round_info: RoundInfo!, player_infos: [PlayerInfo!]!): Round!
-  updatePlayers(id: ID!, player_statuses: [PlayerStatus!]!): Round!
+  CreateRound(round_info: RoundInfo!, player_infos: [PlayerInfo!]!): Round!
+  UpdateRound(round_id: ID!, new_state: RoundState!, player_statuses: [PlayerStatus!]!): Round!
+  AddComment(round_id: ID!, from: String!, text: String!): Round!
 }
 
 type Query {
-  RoundInfo(id: ID): Round!
-  Rounds(n: Int = 1): [Round!]!
+  GetRoundInfo(id: ID): Round!
+  ListRounds(n: Int, state: RoundState!): [Round!]!
 }

@@ -6,70 +6,79 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"grpc-mafia/round-tracker/graph/model"
 )
 
-// CreateRound is the resolver for the createRound field.
+// CreateRound is the resolver for the CreateRound field.
 func (r *mutationResolver) CreateRound(ctx context.Context, roundInfo model.RoundInfo, playerInfos []*model.PlayerInfo) (*model.Round, error) {
-	players := make([]*model.Player, 0)
-
-	for _, info := range playerInfos {
-		players = append(players, &model.Player{
-			Login: info.Login,
-			Role:  info.Role,
-			Alive: true,
-		})
+	if err := r.db.InsertRound(&roundInfo); err != nil {
+		return nil, err
 	}
 
-	round := model.Round{
-		ID:        roundInfo.ID,
-		StartedAt: roundInfo.StartedAt,
-		Players:   players,
+	for _, player_info := range playerInfos {
+		if err := r.db.InsertRoundPlayer(roundInfo.ID, player_info); err != nil {
+			return nil, err
+		}
 	}
 
-	r.rounds[round.ID] = &round
-
-	return &round, nil
-}
-
-// UpdatePlayers is the resolver for the updatePlayers field.
-func (r *mutationResolver) UpdatePlayers(ctx context.Context, id string, playerStatuses []*model.PlayerStatus) (*model.Round, error) {
-	round, ok := r.rounds[id]
-	if !ok {
-		return nil, fmt.Errorf("round not found")
-	}
-
-	status_map := make(map[string]*model.PlayerStatus)
-
-	for _, status := range playerStatuses {
-		status_map[status.Login] = status
-	}
-
-	for _, player := range round.Players {
-		player.Alive = status_map[player.Login].Alive
+	round, err := r.db.GetRound(roundInfo.ID)
+	if err != nil {
+		return nil, err
 	}
 
 	return round, nil
 }
 
-// RoundInfo is the resolver for the RoundInfo field.
-func (r *queryResolver) RoundInfo(ctx context.Context, id *string) (*model.Round, error) {
-	round, ok := r.rounds[*id]
-	if !ok {
-		return nil, fmt.Errorf("round not found")
+// UpdateRound is the resolver for the UpdateRound field.
+func (r *mutationResolver) UpdateRound(ctx context.Context, roundID string, newState model.RoundState, playerStatuses []*model.PlayerStatus) (*model.Round, error) {
+	r.db.UpdateRound(roundID, &newState)
+
+	for _, player_status := range playerStatuses {
+		if err := r.db.UpdateRoundPlayer(roundID, player_status); err != nil {
+			return nil, err
+		}
+	}
+
+	round, err := r.db.GetRound(roundID)
+	if err != nil {
+		return nil, err
 	}
 
 	return round, nil
 }
 
-// Rounds is the resolver for the Rounds field.
-func (r *queryResolver) Rounds(ctx context.Context, n *int) ([]*model.Round, error) {
-	for _, round := range r.rounds {
-		return []*model.Round{round}, nil
+// AddComment is the resolver for the AddComment field.
+func (r *mutationResolver) AddComment(ctx context.Context, roundID string, from string, text string) (*model.Round, error) {
+	if err := r.db.InsertRoundComment(roundID, from, text); err != nil {
+		return nil, err
 	}
 
-	return nil, nil
+	round, err := r.db.GetRound(roundID)
+	if err != nil {
+		return nil, err
+	}
+
+	return round, nil
+}
+
+// GetRoundInfo is the resolver for the GetRoundInfo field.
+func (r *queryResolver) GetRoundInfo(ctx context.Context, id *string) (*model.Round, error) {
+	round, err := r.db.GetRound(*id)
+	if err != nil {
+		return nil, err
+	}
+
+	return round, nil
+}
+
+// ListRounds is the resolver for the ListRounds field.
+func (r *queryResolver) ListRounds(ctx context.Context, n *int, state model.RoundState) ([]*model.Round, error) {
+	rounds, err := r.db.ListRounds(*n, state)
+	if err != nil {
+		return nil, err
+	}
+
+	return rounds, nil
 }
 
 // Mutation returns MutationResolver implementation.

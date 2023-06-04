@@ -45,9 +45,15 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Comment struct {
+		From func(childComplexity int) int
+		Text func(childComplexity int) int
+	}
+
 	Mutation struct {
-		CreateRound   func(childComplexity int, roundInfo model.RoundInfo, playerInfos []*model.PlayerInfo) int
-		UpdatePlayers func(childComplexity int, id string, playerStatuses []*model.PlayerStatus) int
+		AddComment  func(childComplexity int, roundID string, from string, text string) int
+		CreateRound func(childComplexity int, roundInfo model.RoundInfo, playerInfos []*model.PlayerInfo) int
+		UpdateRound func(childComplexity int, roundID string, newState model.RoundState, playerStatuses []*model.PlayerStatus) int
 	}
 
 	Player struct {
@@ -57,24 +63,27 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		RoundInfo func(childComplexity int, id *string) int
-		Rounds    func(childComplexity int, n *int) int
+		GetRoundInfo func(childComplexity int, id *string) int
+		ListRounds   func(childComplexity int, n *int, state model.RoundState) int
 	}
 
 	Round struct {
+		Comments  func(childComplexity int) int
 		ID        func(childComplexity int) int
 		Players   func(childComplexity int) int
 		StartedAt func(childComplexity int) int
+		State     func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	CreateRound(ctx context.Context, roundInfo model.RoundInfo, playerInfos []*model.PlayerInfo) (*model.Round, error)
-	UpdatePlayers(ctx context.Context, id string, playerStatuses []*model.PlayerStatus) (*model.Round, error)
+	UpdateRound(ctx context.Context, roundID string, newState model.RoundState, playerStatuses []*model.PlayerStatus) (*model.Round, error)
+	AddComment(ctx context.Context, roundID string, from string, text string) (*model.Round, error)
 }
 type QueryResolver interface {
-	RoundInfo(ctx context.Context, id *string) (*model.Round, error)
-	Rounds(ctx context.Context, n *int) ([]*model.Round, error)
+	GetRoundInfo(ctx context.Context, id *string) (*model.Round, error)
+	ListRounds(ctx context.Context, n *int, state model.RoundState) ([]*model.Round, error)
 }
 
 type executableSchema struct {
@@ -92,29 +101,55 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Mutation.createRound":
+	case "Comment.from":
+		if e.complexity.Comment.From == nil {
+			break
+		}
+
+		return e.complexity.Comment.From(childComplexity), true
+
+	case "Comment.text":
+		if e.complexity.Comment.Text == nil {
+			break
+		}
+
+		return e.complexity.Comment.Text(childComplexity), true
+
+	case "Mutation.AddComment":
+		if e.complexity.Mutation.AddComment == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_AddComment_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddComment(childComplexity, args["round_id"].(string), args["from"].(string), args["text"].(string)), true
+
+	case "Mutation.CreateRound":
 		if e.complexity.Mutation.CreateRound == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createRound_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_CreateRound_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
 		return e.complexity.Mutation.CreateRound(childComplexity, args["round_info"].(model.RoundInfo), args["player_infos"].([]*model.PlayerInfo)), true
 
-	case "Mutation.updatePlayers":
-		if e.complexity.Mutation.UpdatePlayers == nil {
+	case "Mutation.UpdateRound":
+		if e.complexity.Mutation.UpdateRound == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_updatePlayers_args(context.TODO(), rawArgs)
+		args, err := ec.field_Mutation_UpdateRound_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdatePlayers(childComplexity, args["id"].(string), args["player_statuses"].([]*model.PlayerStatus)), true
+		return e.complexity.Mutation.UpdateRound(childComplexity, args["round_id"].(string), args["new_state"].(model.RoundState), args["player_statuses"].([]*model.PlayerStatus)), true
 
 	case "Player.alive":
 		if e.complexity.Player.Alive == nil {
@@ -137,29 +172,36 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Player.Role(childComplexity), true
 
-	case "Query.RoundInfo":
-		if e.complexity.Query.RoundInfo == nil {
+	case "Query.GetRoundInfo":
+		if e.complexity.Query.GetRoundInfo == nil {
 			break
 		}
 
-		args, err := ec.field_Query_RoundInfo_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_GetRoundInfo_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.RoundInfo(childComplexity, args["id"].(*string)), true
+		return e.complexity.Query.GetRoundInfo(childComplexity, args["id"].(*string)), true
 
-	case "Query.Rounds":
-		if e.complexity.Query.Rounds == nil {
+	case "Query.ListRounds":
+		if e.complexity.Query.ListRounds == nil {
 			break
 		}
 
-		args, err := ec.field_Query_Rounds_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_ListRounds_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.Rounds(childComplexity, args["n"].(*int)), true
+		return e.complexity.Query.ListRounds(childComplexity, args["n"].(*int), args["state"].(model.RoundState)), true
+
+	case "Round.comments":
+		if e.complexity.Round.Comments == nil {
+			break
+		}
+
+		return e.complexity.Round.Comments(childComplexity), true
 
 	case "Round.id":
 		if e.complexity.Round.ID == nil {
@@ -181,6 +223,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Round.StartedAt(childComplexity), true
+
+	case "Round.state":
+		if e.complexity.Round.State == nil {
+			break
+		}
+
+		return e.complexity.Round.State(childComplexity), true
 
 	}
 	return 0, false
@@ -272,7 +321,40 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_createRound_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_AddComment_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["round_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("round_id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["round_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["from"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["from"] = arg1
+	var arg2 string
+	if tmp, ok := rawArgs["text"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["text"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_CreateRound_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.RoundInfo
@@ -296,31 +378,40 @@ func (ec *executionContext) field_Mutation_createRound_args(ctx context.Context,
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_updatePlayers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_UpdateRound_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["round_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("round_id"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
-	var arg1 []*model.PlayerStatus
-	if tmp, ok := rawArgs["player_statuses"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("player_statuses"))
-		arg1, err = ec.unmarshalNPlayerStatus2ᚕᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐPlayerStatusᚄ(ctx, tmp)
+	args["round_id"] = arg0
+	var arg1 model.RoundState
+	if tmp, ok := rawArgs["new_state"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("new_state"))
+		arg1, err = ec.unmarshalNRoundState2grpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRoundState(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["player_statuses"] = arg1
+	args["new_state"] = arg1
+	var arg2 []*model.PlayerStatus
+	if tmp, ok := rawArgs["player_statuses"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("player_statuses"))
+		arg2, err = ec.unmarshalNPlayerStatus2ᚕᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐPlayerStatusᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["player_statuses"] = arg2
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_RoundInfo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_GetRoundInfo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *string
@@ -335,7 +426,7 @@ func (ec *executionContext) field_Query_RoundInfo_args(ctx context.Context, rawA
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_Rounds_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_ListRounds_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *int
@@ -347,6 +438,15 @@ func (ec *executionContext) field_Query_Rounds_args(ctx context.Context, rawArgs
 		}
 	}
 	args["n"] = arg0
+	var arg1 model.RoundState
+	if tmp, ok := rawArgs["state"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+		arg1, err = ec.unmarshalNRoundState2grpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRoundState(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["state"] = arg1
 	return args, nil
 }
 
@@ -403,8 +503,96 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Mutation_createRound(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_createRound(ctx, field)
+func (ec *executionContext) _Comment_from(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Comment_from(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.From, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Comment_from(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Comment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Comment_text(ctx context.Context, field graphql.CollectedField, obj *model.Comment) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Comment_text(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Text, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Comment_text(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Comment",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_CreateRound(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_CreateRound(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -434,7 +622,7 @@ func (ec *executionContext) _Mutation_createRound(ctx context.Context, field gra
 	return ec.marshalNRound2ᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRound(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_createRound(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_CreateRound(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -444,10 +632,14 @@ func (ec *executionContext) fieldContext_Mutation_createRound(ctx context.Contex
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Round_id(ctx, field)
+			case "state":
+				return ec.fieldContext_Round_state(ctx, field)
 			case "started_at":
 				return ec.fieldContext_Round_started_at(ctx, field)
 			case "players":
 				return ec.fieldContext_Round_players(ctx, field)
+			case "comments":
+				return ec.fieldContext_Round_comments(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Round", field.Name)
 		},
@@ -459,15 +651,15 @@ func (ec *executionContext) fieldContext_Mutation_createRound(ctx context.Contex
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_createRound_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_CreateRound_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_updatePlayers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updatePlayers(ctx, field)
+func (ec *executionContext) _Mutation_UpdateRound(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_UpdateRound(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -480,7 +672,7 @@ func (ec *executionContext) _Mutation_updatePlayers(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdatePlayers(rctx, fc.Args["id"].(string), fc.Args["player_statuses"].([]*model.PlayerStatus))
+		return ec.resolvers.Mutation().UpdateRound(rctx, fc.Args["round_id"].(string), fc.Args["new_state"].(model.RoundState), fc.Args["player_statuses"].([]*model.PlayerStatus))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -497,7 +689,7 @@ func (ec *executionContext) _Mutation_updatePlayers(ctx context.Context, field g
 	return ec.marshalNRound2ᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRound(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Mutation_updatePlayers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_UpdateRound(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -507,10 +699,14 @@ func (ec *executionContext) fieldContext_Mutation_updatePlayers(ctx context.Cont
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Round_id(ctx, field)
+			case "state":
+				return ec.fieldContext_Round_state(ctx, field)
 			case "started_at":
 				return ec.fieldContext_Round_started_at(ctx, field)
 			case "players":
 				return ec.fieldContext_Round_players(ctx, field)
+			case "comments":
+				return ec.fieldContext_Round_comments(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Round", field.Name)
 		},
@@ -522,7 +718,74 @@ func (ec *executionContext) fieldContext_Mutation_updatePlayers(ctx context.Cont
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updatePlayers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_UpdateRound_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_AddComment(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_AddComment(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AddComment(rctx, fc.Args["round_id"].(string), fc.Args["from"].(string), fc.Args["text"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Round)
+	fc.Result = res
+	return ec.marshalNRound2ᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRound(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_AddComment(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Round_id(ctx, field)
+			case "state":
+				return ec.fieldContext_Round_state(ctx, field)
+			case "started_at":
+				return ec.fieldContext_Round_started_at(ctx, field)
+			case "players":
+				return ec.fieldContext_Round_players(ctx, field)
+			case "comments":
+				return ec.fieldContext_Round_comments(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Round", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_AddComment_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -661,8 +924,8 @@ func (ec *executionContext) fieldContext_Player_alive(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_RoundInfo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_RoundInfo(ctx, field)
+func (ec *executionContext) _Query_GetRoundInfo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_GetRoundInfo(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -675,7 +938,7 @@ func (ec *executionContext) _Query_RoundInfo(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().RoundInfo(rctx, fc.Args["id"].(*string))
+		return ec.resolvers.Query().GetRoundInfo(rctx, fc.Args["id"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -692,7 +955,7 @@ func (ec *executionContext) _Query_RoundInfo(ctx context.Context, field graphql.
 	return ec.marshalNRound2ᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRound(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_RoundInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_GetRoundInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -702,10 +965,14 @@ func (ec *executionContext) fieldContext_Query_RoundInfo(ctx context.Context, fi
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Round_id(ctx, field)
+			case "state":
+				return ec.fieldContext_Round_state(ctx, field)
 			case "started_at":
 				return ec.fieldContext_Round_started_at(ctx, field)
 			case "players":
 				return ec.fieldContext_Round_players(ctx, field)
+			case "comments":
+				return ec.fieldContext_Round_comments(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Round", field.Name)
 		},
@@ -717,15 +984,15 @@ func (ec *executionContext) fieldContext_Query_RoundInfo(ctx context.Context, fi
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_RoundInfo_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_GetRoundInfo_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_Rounds(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_Rounds(ctx, field)
+func (ec *executionContext) _Query_ListRounds(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_ListRounds(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -738,7 +1005,7 @@ func (ec *executionContext) _Query_Rounds(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Rounds(rctx, fc.Args["n"].(*int))
+		return ec.resolvers.Query().ListRounds(rctx, fc.Args["n"].(*int), fc.Args["state"].(model.RoundState))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -755,7 +1022,7 @@ func (ec *executionContext) _Query_Rounds(ctx context.Context, field graphql.Col
 	return ec.marshalNRound2ᚕᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRoundᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_Rounds(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_ListRounds(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -765,10 +1032,14 @@ func (ec *executionContext) fieldContext_Query_Rounds(ctx context.Context, field
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Round_id(ctx, field)
+			case "state":
+				return ec.fieldContext_Round_state(ctx, field)
 			case "started_at":
 				return ec.fieldContext_Round_started_at(ctx, field)
 			case "players":
 				return ec.fieldContext_Round_players(ctx, field)
+			case "comments":
+				return ec.fieldContext_Round_comments(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Round", field.Name)
 		},
@@ -780,7 +1051,7 @@ func (ec *executionContext) fieldContext_Query_Rounds(ctx context.Context, field
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_Rounds_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_ListRounds_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -960,6 +1231,50 @@ func (ec *executionContext) fieldContext_Round_id(ctx context.Context, field gra
 	return fc, nil
 }
 
+func (ec *executionContext) _Round_state(ctx context.Context, field graphql.CollectedField, obj *model.Round) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Round_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.RoundState)
+	fc.Result = res
+	return ec.marshalNRoundState2grpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRoundState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Round_state(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Round",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type RoundState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Round_started_at(ctx context.Context, field graphql.CollectedField, obj *model.Round) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Round_started_at(ctx, field)
 	if err != nil {
@@ -986,9 +1301,9 @@ func (ec *executionContext) _Round_started_at(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(int)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Round_started_at(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -998,7 +1313,7 @@ func (ec *executionContext) fieldContext_Round_started_at(ctx context.Context, f
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -1051,6 +1366,56 @@ func (ec *executionContext) fieldContext_Round_players(ctx context.Context, fiel
 				return ec.fieldContext_Player_alive(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Player", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Round_comments(ctx context.Context, field graphql.CollectedField, obj *model.Round) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Round_comments(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comments, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Comment)
+	fc.Result = res
+	return ec.marshalNComment2ᚕᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐCommentᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Round_comments(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Round",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "from":
+				return ec.fieldContext_Comment_from(ctx, field)
+			case "text":
+				return ec.fieldContext_Comment_text(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Comment", field.Name)
 		},
 	}
 	return fc, nil
@@ -2912,7 +3277,7 @@ func (ec *executionContext) unmarshalInputRoundInfo(ctx context.Context, obj int
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "started_at"}
+	fieldsInOrder := [...]string{"id", "state", "started_at"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2928,11 +3293,20 @@ func (ec *executionContext) unmarshalInputRoundInfo(ctx context.Context, obj int
 				return it, err
 			}
 			it.ID = data
+		case "state":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+			data, err := ec.unmarshalNRoundState2grpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRoundState(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.State = data
 		case "started_at":
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("started_at"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2950,6 +3324,41 @@ func (ec *executionContext) unmarshalInputRoundInfo(ctx context.Context, obj int
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var commentImplementors = []string{"Comment"}
+
+func (ec *executionContext) _Comment(ctx context.Context, sel ast.SelectionSet, obj *model.Comment) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, commentImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Comment")
+		case "from":
+
+			out.Values[i] = ec._Comment_from(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "text":
+
+			out.Values[i] = ec._Comment_text(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var mutationImplementors = []string{"Mutation"}
 
@@ -2970,19 +3379,28 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "createRound":
+		case "CreateRound":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_createRound(ctx, field)
+				return ec._Mutation_CreateRound(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "updatePlayers":
+		case "UpdateRound":
 
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updatePlayers(ctx, field)
+				return ec._Mutation_UpdateRound(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "AddComment":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_AddComment(ctx, field)
 			})
 
 			if out.Values[i] == graphql.Null {
@@ -3060,7 +3478,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "RoundInfo":
+		case "GetRoundInfo":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -3069,7 +3487,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_RoundInfo(ctx, field)
+				res = ec._Query_GetRoundInfo(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3083,7 +3501,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "Rounds":
+		case "ListRounds":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -3092,7 +3510,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_Rounds(ctx, field)
+				res = ec._Query_ListRounds(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3146,6 +3564,13 @@ func (ec *executionContext) _Round(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "state":
+
+			out.Values[i] = ec._Round_state(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "started_at":
 
 			out.Values[i] = ec._Round_started_at(ctx, field, obj)
@@ -3156,6 +3581,13 @@ func (ec *executionContext) _Round(ctx context.Context, sel ast.SelectionSet, ob
 		case "players":
 
 			out.Values[i] = ec._Round_players(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "comments":
+
+			out.Values[i] = ec._Round_comments(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -3504,6 +3936,60 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNComment2ᚕᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐCommentᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Comment) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNComment2ᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐComment(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNComment2ᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐComment(ctx context.Context, sel ast.SelectionSet, v *model.Comment) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Comment(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3511,21 +3997,6 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
-}
-
-func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
-	res, err := graphql.UnmarshalInt(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
-	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -3693,6 +4164,16 @@ func (ec *executionContext) marshalNRound2ᚖgrpcᚑmafiaᚋroundᚑtrackerᚋgr
 func (ec *executionContext) unmarshalNRoundInfo2grpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRoundInfo(ctx context.Context, v interface{}) (model.RoundInfo, error) {
 	res, err := ec.unmarshalInputRoundInfo(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNRoundState2grpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRoundState(ctx context.Context, v interface{}) (model.RoundState, error) {
+	var res model.RoundState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNRoundState2grpcᚑmafiaᚋroundᚑtrackerᚋgraphᚋmodelᚐRoundState(ctx context.Context, sel ast.SelectionSet, v model.RoundState) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
