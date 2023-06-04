@@ -122,13 +122,17 @@ func (g *Game) Publish(mafia_name string) {
 	})
 }
 
+func (g *Game) IsRunning() bool {
+	return g.state == Day || g.state == Night
+}
+
 func (g *Game) Disconnect(player string) {
 	g.mtx.Lock()
 	defer g.mtx.Unlock()
 
 	// disconnect == death
 	_, is_alive := g.alive_players[player]
-	if is_alive {
+	if is_alive && g.IsRunning() {
 		g.sendMsgToAll(fmt.Sprintf("%s disconnected", player))
 		g.kill(player)
 	}
@@ -342,9 +346,10 @@ func (g *Game) Start() {
 	defer g.mtx.Unlock()
 
 	g.assignRoles()
-	g.sendStartGame()
+	g.game_start_timestamp = time.Now() // for statistics and tracker
+	TrackerClient.CreateRound(g)
 
-	g.game_start_timestamp = time.Now() // for statistics
+	g.sendStartGame()
 
 	// prepare phase
 	g.waitEventsFrom(g.alive_players)
@@ -481,6 +486,7 @@ func (g *Game) kill(player string) {
 		delete(g.civilians, player)
 	}
 
+	TrackerClient.UpdatePlayersInfo(g)
 	g.sendDeathMessageToAll(player)
 }
 
@@ -509,6 +515,7 @@ func (g *Game) end() {
 		g.sendGameEndToAll("game ended, sheriffs win")
 	}
 	RegistryClient.SendRoundReport(g)
+	TrackerClient.UpdatePlayersInfo(g)
 }
 
 func NewGame(player_cnt uint32) *Game {
