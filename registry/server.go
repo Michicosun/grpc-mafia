@@ -75,7 +75,7 @@ func (s *server) Init(cfg ServerConfig) {
 	}
 	s.pdf_storage = pdfs
 
-	s.db = db.NewDBAdapter(fmt.Sprintf("%s/db", cfg.DataFolder))
+	s.db = db.NewDBAdapter(fmt.Sprintf("%s/registry-db", cfg.DataFolder))
 	Server.db.InitTables()
 
 	s.gen = pdfgen.NewPDFGen()

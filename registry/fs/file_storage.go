@@ -1,7 +1,7 @@
 package fs
 
 import (
-	"errors"
+	"grpc-mafia/util"
 	"os"
 	"path/filepath"
 )
@@ -56,22 +56,13 @@ func (fs *FileStorage) Pwd(filename string) string {
 	return filepath.Join(fs.folder, filename)
 }
 
-func createIfNotExists(path string) error {
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		if err := os.MkdirAll(path, os.ModePerm); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func CreateFileStorage(folder string) (*FileStorage, error) {
 	abs_folder, err := filepath.Abs(folder)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := createIfNotExists(abs_folder); err != nil {
+	if err := util.CreateIfNotExists(abs_folder); err != nil {
 		return nil, err
 	}
 
