@@ -86,6 +86,7 @@ func (s *session) Start(name string) error {
 
 func (s *session) Stop() {
 	s.ChangeState(Undefined, true)
+	s.ChangeTime(mafia.Time(-1))
 	grpc.Connection.CloseStream()
 
 	ChatPrinter.Stop()

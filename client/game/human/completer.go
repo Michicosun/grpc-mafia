@@ -18,6 +18,8 @@ func (hi *humanInteractor) Completer(in prompt.Document) []prompt.Suggest {
 
 	if len(args) > 0 {
 		switch args[0] {
+		case "login":
+			s = []prompt.Suggest{}
 		case "connect":
 			s = []prompt.Suggest{}
 		case "exit":
@@ -47,6 +49,7 @@ func (hi *humanInteractor) exitChecker(in string, breakline bool) bool {
 
 var stateToSuggestions = map[game.GameState][]prompt.Suggest{
 	game.Undefined: {
+		{Text: "login", Description: "login mafia services"},
 		{Text: "connect", Description: "find game"},
 		{Text: "exit", Description: "close client"},
 	},

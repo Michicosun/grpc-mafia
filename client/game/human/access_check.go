@@ -5,6 +5,10 @@ import (
 	mafia "grpc-mafia/server/proto"
 )
 
+func AllowLogin() bool {
+	return game.Session.GetState() == game.Undefined
+}
+
 func AllowConnect() bool {
 	return game.Session.GetState() == game.Undefined
 }
@@ -21,7 +25,11 @@ func AllowPublish() bool {
 	return game.Session.MafiaCheck
 }
 
-func AllowMessage(role mafia.Role) bool {
+func AllowMessage() bool {
+	return game.Session.GetState() != game.Undefined
+}
+
+func AllowMessageByRole(role mafia.Role) bool {
 	if game.Session.GetState() == game.Ghost {
 		return false
 	}

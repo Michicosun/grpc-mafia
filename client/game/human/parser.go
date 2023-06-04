@@ -10,6 +10,7 @@ import (
 )
 
 type humanInteractor struct {
+	login      string
 	prefix     string
 	cur_buffer string
 	p          *prompt.Prompt
@@ -20,6 +21,10 @@ func handleExit() {
 	rawModeOff.Stdin = os.Stdin
 	_ = rawModeOff.Run()
 	rawModeOff.Wait()
+}
+
+func (hi *humanInteractor) SetLogin(login string) {
+	hi.login = login
 }
 
 func (hi *humanInteractor) GetCurBuf() string {

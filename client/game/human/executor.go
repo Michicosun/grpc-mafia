@@ -16,25 +16,42 @@ func (hi *humanInteractor) Executor(in string) {
 	switch blocks[0] {
 	case "":
 		return
-	case "connect":
-		if len(blocks) != 2 {
+	case "login":
+		if !AllowLogin() {
+			fmt.Println("login is not allowed")
+			return
+		} else if len(blocks) != 2 {
 			fmt.Println("need to provide login as parameter")
 			return
-		} else if !AllowConnect() {
+		} else {
+			hi.SetLogin(blocks[1])
+		}
+	case "connect":
+		if !AllowConnect() {
 			fmt.Println("connect is not allowed")
 			return
+		} else if len(blocks) != 1 {
+			fmt.Println("parameters are not expected")
+			return
+		} else if len(hi.login) == 0 {
+			fmt.Println("login not specified")
+			return
 		} else {
-			game.Session.Start(blocks[1])
+			fmt.Println("using login:", hi.login)
+			game.Session.Start(hi.login)
 		}
 	case "message":
-		if len(blocks) < 3 {
+		if !AllowMessage() {
+			fmt.Println("sending messages is not allowed")
+			return
+		} else if len(blocks) < 3 {
 			fmt.Println("need to provide which group is this message for and message text")
 			return
 		} else {
 			msg := strings.Join(blocks[2:], " ")
 			switch blocks[1] {
 			case "all":
-				if !AllowMessage(mafia.Role_Civilian) {
+				if !AllowMessageByRole(mafia.Role_Civilian) {
 					fmt.Println("sending messages is not allowed")
 					return
 				} else {
@@ -43,7 +60,7 @@ func (hi *humanInteractor) Executor(in string) {
 					}
 				}
 			default:
-				if game.Session.Role == mafia.Role_Civilian || !AllowMessage(game.Session.Role) {
+				if game.Session.Role == mafia.Role_Civilian || !AllowMessageByRole(game.Session.Role) {
 					fmt.Println("sending messages is not allowed")
 					return
 				} else {
@@ -54,11 +71,11 @@ func (hi *humanInteractor) Executor(in string) {
 			}
 		}
 	case "vote":
-		if len(blocks) != 2 {
-			fmt.Println("need to specify who you are voting for")
-			return
-		} else if !AllowVote() {
+		if !AllowVote() {
 			fmt.Println("vote is not allowed")
+			return
+		} else if len(blocks) != 2 {
+			fmt.Println("need to specify who you are voting for")
 			return
 		} else {
 			game.Session.ChangeState(game.Waiting, false)
