@@ -11,7 +11,8 @@ type Comment {
 
 enum RoundState {
   RUNNING
-  FINISHED
+  WIN_MAFIA
+  WIN_SHERIFFS
 }
 
 type Round {

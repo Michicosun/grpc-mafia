@@ -46,18 +46,20 @@ type RoundInfo struct {
 type RoundState string
 
 const (
-	RoundStateRunning  RoundState = "RUNNING"
-	RoundStateFinished RoundState = "FINISHED"
+	RoundStateRunning     RoundState = "RUNNING"
+	RoundStateWinMafia    RoundState = "WIN_MAFIA"
+	RoundStateWinSheriffs RoundState = "WIN_SHERIFFS"
 )
 
 var AllRoundState = []RoundState{
 	RoundStateRunning,
-	RoundStateFinished,
+	RoundStateWinMafia,
+	RoundStateWinSheriffs,
 }
 
 func (e RoundState) IsValid() bool {
 	switch e {
-	case RoundStateRunning, RoundStateFinished:
+	case RoundStateRunning, RoundStateWinMafia, RoundStateWinSheriffs:
 		return true
 	}
 	return false
