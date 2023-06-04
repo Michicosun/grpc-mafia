@@ -26,6 +26,7 @@ func main() {
 
 	logger.Init()
 	server.RegistryClient.Init()
+	server.TrackerClient.Init()
 
 	port := util.GetEnvWithDefault("PORT", DEFAULT_GRPC_PORT)
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
